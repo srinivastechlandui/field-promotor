@@ -11,13 +11,15 @@ import { useState } from "react";
 import activeimg from '../Assets/active-img.png';
 import camera from '../Assets/camera.png'
 import selfi from '../Assets/selfi.png';
-export default function UnFilledPopup ({onClose}) {
-//   if (!isOpen) return null;
-const [currentPage, setCurrentPage] = useState("main");
+import BASE_URL from "../utils/Urls";
+export default function UnFilledPopup ({user = {}, onClose}) {
+    console.log("data1",user)
+    // user: { user_id, phone_number, email, joinedDate, profile_img, aadhar_front_img, aadhar_back_img, pan_front_img }
+    const [currentPage, setCurrentPage] = useState("main");
   const [activeStep, setActiveStep] = useState(null);
   const steps = [
     { label: "User iD Access", status: "complete" },
-    { label: "Profile photo upload", status: "complete" },
+    { label: "pending", status: "complete" },
     { label: "Details fillup", status: "in-progress" },
     { label: "Documents upload", status: "in-progress" },
     { label: "Onboarding/baground verification fee", status: "pending" },
@@ -44,16 +46,16 @@ const [currentPage, setCurrentPage] = useState("main");
         padding:"20px 0 50px 0",
         backgroundColor: '#E19034',
         }}>
-        <div className=" flex items-center justify-end gap-20 mt-5">
-          <div className="flex items-center justify-center w-[492px] h-[106px] bg-white rounded-lg">
-            <span className="text-[#E19034] text-[90px] ">UN FILLED</span>
-          </div>
-          <div onClick={() =>{onClose(); console.log("Close button clicked"); }
-          }
-            className="w-20 h-20 bg-[#FF0505] rounded-lg flex items-center justify-center">
-            <IoClose  className="text-white w-14 h-14"/>
-          </div>
-        </div>
+                <div className=" flex items-center justify-end gap-20 mt-5">
+                    <div className="flex items-center justify-center w-[492px] h-[106px] bg-white rounded-lg">
+                        <span className="text-[#E19034] text-[90px] ">UN FILLED</span>
+                    </div>
+                    <div onClick={() =>{onClose(); console.log("Close button clicked"); }
+                    }
+                        className="w-20 h-20 bg-[#FF0505] rounded-lg flex items-center justify-center">
+                        <IoClose  className="text-white w-14 h-14"/>
+                    </div>
+                </div>
         <div className="flex items-center justify-center">
             {/* card 1 */}
             <div
@@ -130,21 +132,23 @@ const [currentPage, setCurrentPage] = useState("main");
                     <div className="space-y-2 mb-2">
                         <div>
                         <label className="block text-white text-[7px] font-bold mb-1">USER ID</label>
-                            <div className="border border-white rounded-sm w-[139px] h-[17px] bg-white/10 backdrop-blur-md">
+                            <div className="border border-white rounded-sm w-[139px] h-[22px] bg-white/10 backdrop-blur-md">
                                 <input 
                                     type="text" 
-                                    className="w-full bg-transparent border-none text-white focus:outline-none placeholder-gray-300"                
+                                    value={user.user_id}
+                                    className="w-full bg-transparent border-none text-white focus:outline-none placeholder-gray-300 text-[15px]"                
                                     placeholder=""
                                 />
                             </div>
                         </div>
                         
                         <div>
-                        <label className="block text-white text-[7px] font-bold mb-1">Ph number</label>
-                        <div className="border border-white rounded-sm w-[139px] h-[17px] bg-white/10 backdrop-blur-md">
+                        <label className="block text-white text-[7px] font-bold mb-1">Ph numbewr</label>
+                        <div className="border border-white rounded-sm w-[139px] h-[22px] bg-white/10 backdrop-blur-md">
                         <input 
                             type="tel" 
-                            className="w-full bg-transparent border-none text-white focus:outline-none placeholder-gray-300"
+                            value={user.phone_number}
+                            className="w-full bg-transparent border-none text-white focus:outline-none placeholder-gray-300 text-[15px]"
                             placeholder=""
                         />
                         </div>
@@ -152,10 +156,11 @@ const [currentPage, setCurrentPage] = useState("main");
                         
                         <div>
                         <label className="block text-white text-[7px] font-bold mb-1">EMAIL</label>
-                            <div className="border border-white rounded-sm w-[139px] h-[17px] bg-white/10 backdrop-blur-md">
+                            <div className="border border-white rounded-sm w-[142px] h-[23px] bg-white/10 backdrop-blur-md">
                                 <input 
                                     type="email" 
-                                    className="w-full bg-transparent border-none text-white focus:outline-none placeholder-gray-300"
+                                    value={user.email}
+                                    className="w-full bg-transparent border-none text-white focus:outline-none placeholder-gray-300 text-[15px]"
                                     placeholder=""
                                 />
                             </div>
@@ -175,10 +180,11 @@ const [currentPage, setCurrentPage] = useState("main");
                     <div className="space-y-2 mt-10">
                         <div>
                         <label className="block text-white text-[7px] font-bold mb-1">USER ID</label>
-                            <div className="border border-white rounded-sm w-[139px] h-[17px] bg-white/10 backdrop-blur-md">
+                            <div className="border border-white rounded-sm w-[139px] h-[22px] bg-white/10 backdrop-blur-md">
                                 <input 
                                     type="text" 
-                                    className="w-full bg-transparent border-none text-white focus:outline-none placeholder-gray-300"                
+                                    value={user.user_id}
+                                    className="w-full bg-transparent border-none text-white focus:outline-none placeholder-gray-300 text-[15px]"                
                                     placeholder=""
                                 />
                             </div>
@@ -186,10 +192,11 @@ const [currentPage, setCurrentPage] = useState("main");
                         
                         <div>
                         <label className="block text-white text-[7px] font-bold mb-1">Ph number</label>
-                        <div className="border border-white rounded-sm w-[139px] h-[17px] bg-white/10 backdrop-blur-md">
+                        <div className="border border-white rounded-sm w-[139px] h-[22px] bg-white/10 backdrop-blur-md">
                         <input 
                             type="tel" 
-                            className="w-full bg-transparent border-none text-white focus:outline-none placeholder-gray-300"
+                            value={user.phone_number}
+                            className="w-full bg-transparent border-none text-white focus:outline-none placeholder-gray-300 text-[15px]"
                             placeholder=""
                         />
                         </div>
@@ -197,10 +204,11 @@ const [currentPage, setCurrentPage] = useState("main");
                         
                         <div>
                         <label className="block text-white text-[7px] font-bold mb-1">EMAIL</label>
-                            <div className="border border-white rounded-sm w-[139px] h-[17px] bg-white/10 backdrop-blur-md">
+                            <div className="border border-white rounded-sm w-[139px] h-[24px] bg-white/10 backdrop-blur-md">
                                 <input 
                                     type="email" 
-                                    className="w-full bg-transparent border-none text-white focus:outline-none placeholder-gray-300"
+                                    value={user.email}
+                                    className="w-full bg-transparent border-none text-white focus:outline-none placeholder-gray-300 text-[15px]"
                                     placeholder=""
                                 />
                             </div>
@@ -209,7 +217,7 @@ const [currentPage, setCurrentPage] = useState("main");
                     <div className="flex flex-col mt-20 items-center">
                         <span><FaAngleUp className="w-6 h-6 text-white" /></span>
                     <button className="w-[136px] h-[26px] bg-[#78FF47] rounded-lg border-2 border-white">
-
+                      verify                  
                     </button>
                     </div>
                 </div>
@@ -218,19 +226,23 @@ const [currentPage, setCurrentPage] = useState("main");
         </div>
         <div className="flex items-center justify-start mt-10 gap-10">
             {/* CARD 1 */}
-            <div className="flex flex-col items-center">
-                <div className="w-32 h-5 bg-white text-[#581717] rounded-full text-xs flex items-center justify-center">Profile photo upload</div>
-                <div 
-                    className="w-[168px] h-[300px] bg-cover bg-center flex flex-col items-center px-4 py-10 rounded-lg mt-5"
-                    style={{ backgroundImage: `url(${selfi})` }}>
-                    <div className="flex flex-col items-center">
-                        <img src={activeimg} alt="" />
-                        <img src={camera} alt="" className="mt-6" />
-                        <div className="w-[128px] h-[24px] flex items-center justify-center bg-[#78FF47] text-white rounded-lg mt-10">
-                        </div> 
-                    </div>
-                </div>
-            </div>
+                        <div className="flex flex-col items-center">
+                                <div className="w-32 h-5 bg-white text-[#581717] rounded-full text-xs flex items-center justify-center">Profile photo upload</div>
+                                <div 
+                                        className="w-[168px] h-[300px] bg-cover bg-center flex flex-col items-center px-4 py-10 rounded-lg mt-5"
+                                        style={{ backgroundImage: `url(${selfi})` }}>
+                                        <div className="flex flex-col items-center">
+                                                {user.profile_img ? (
+                                                    <img src={user.profile_img} alt="Profile" className="w-24 h-24 rounded-full border-2 border-white" />
+                                                ) : (
+                                                    <img src={activeimg} alt="" />
+                                                )}
+                                                {/* Optionally show camera icon or upload button if needed */}
+                                                <div className="w-[128px] h-[24px] flex items-center justify-center bg-[#78FF47] text-white rounded-lg mt-10">
+                                                </div> 
+                                        </div>
+                                </div>
+                        </div>
             {/* CARD 2 */}
             <div className="flex flex-col items-center">
                  <div className="w-32 h-5 bg-white text-[#581717] rounded-full text-xs flex items-center justify-center">Details fillup</div>
@@ -242,6 +254,7 @@ const [currentPage, setCurrentPage] = useState("main");
                             <div className="border border-white rounded-sm w-[139px] h-[17px] bg-white/10 backdrop-blur-md">
                                 <input 
                                     type="text" 
+                                    value={user.aadhar_no}
                                     className="w-full bg-transparent border-none text-white focus:outline-none placeholder-gray-300"                
                                     placeholder=""
                                 />
@@ -253,6 +266,7 @@ const [currentPage, setCurrentPage] = useState("main");
                         <div className="border border-white rounded-sm w-[139px] h-[17px] bg-white/10 backdrop-blur-md">
                         <input 
                             type="tel" 
+                            value={user.aadhar_back_img}
                             className="w-full bg-transparent border-none text-white focus:outline-none placeholder-gray-300"
                             placeholder=""
                         />
@@ -264,6 +278,7 @@ const [currentPage, setCurrentPage] = useState("main");
                             <div className="border border-white rounded-sm w-[139px] h-[17px] bg-white/10 backdrop-blur-md">
                                 <input 
                                     type="email" 
+                                    value={user.pan_front_img}
                                     className="w-full bg-transparent border-none text-white focus:outline-none placeholder-gray-300"
                                     placeholder=""
                                 />
@@ -273,7 +288,8 @@ const [currentPage, setCurrentPage] = useState("main");
                             <label className="block text-white text-[7px] font-bold">IFSC CODE</label>
                             <div className="border border-white rounded-sm w-[139px] h-[17px] bg-white/10 backdrop-blur-md">
                                 <input 
-                                    type="email" 
+                                    type="text" 
+                                    value={user.ifsc_code}
                                     className="w-full bg-transparent border-none text-white focus:outline-none placeholder-gray-300"
                                     placeholder=""
                                 />
@@ -283,7 +299,8 @@ const [currentPage, setCurrentPage] = useState("main");
                             <label className="block text-white text-[7px] font-bold">BANK ACCOUNT NO.</label>
                             <div className="border border-white rounded-sm w-[139px] h-[17px] bg-white/10 backdrop-blur-md">
                                 <input 
-                                    type="email" 
+                                    type="text" 
+                                    value={user.bank_account_no}
                                     className="w-full bg-transparent border-none text-white focus:outline-none placeholder-gray-300"
                                     placeholder=""
                                 />
@@ -293,7 +310,8 @@ const [currentPage, setCurrentPage] = useState("main");
                             <label className="block text-white text-[7px] font-bold">NOMINEE NAME</label>
                             <div className="border border-white rounded-sm w-[139px] h-[17px] bg-white/10 backdrop-blur-md">
                                 <input 
-                                    type="email" 
+                                    type="text" 
+                                    value={user.nominee_name}
                                     className="w-full bg-transparent border-none text-white focus:outline-none placeholder-gray-300"
                                     placeholder=""
                                 />
@@ -303,7 +321,8 @@ const [currentPage, setCurrentPage] = useState("main");
                             <label className="block text-white text-[7px] font-bold">NOMINEE Ph NO.</label>
                             <div className="border border-white rounded-sm w-[139px] h-[17px] bg-white/10 backdrop-blur-md">
                                 <input 
-                                    type="email" 
+                                    type="text" 
+                                    value={user.nominee_phone}
                                     className="w-full bg-transparent border-none text-white focus:outline-none placeholder-gray-300"
                                     placeholder=""
                                 />
@@ -328,75 +347,78 @@ const [currentPage, setCurrentPage] = useState("main");
                 </div>
             </div>
             {/* CARD 3 */}
-            <div className="flex flex-col items-center">
-                <div className="w-32 h-5 bg-white text-[#581717] rounded-full text-xs flex items-center justify-center">Documents upload</div>
-                <div 
-                    className="w-[176px] h-[315px] bg-cover bg-center flex flex-col items-center px-4 py-2 rounded-lg mt-5"
-                    style={{ backgroundImage: `url(${job})` }}>
-                        <div className="flex items-center flex-col mt-5">
-                            <h3 className="font-semibold mb-2 text-white text-xs">Upload Aadhar Card</h3>
-                            <div className="flex items-center gap-10">
-                            {/* Front Camera */}
-                            <div className="flex flex-col items-center">
-                                <span className="text-white font-medium text-[7px] tracking-wider">FRONT</span>
-                                <div className="relative">
-                                {/* Camera background circle */}
-                                <div className="w-[46px] h-[46px] rounded-lg bg-white/20 flex items-center justify-center">
-                                    {/* Camera icon - properly centered */}
-                                    <FaCamera className="text-white text-lg" />
-                                </div>
-                                </div>
-                            </div>
-
-                            {/* Back Camera */}
-                            <div className="flex flex-col items-center gap-2">
-                                <span className="text-white font-medium text-[7px] tracking-wider">BACK</span>
-                                <div className="relative">
-                                <div className="w-[46px] h-[46px] rounded-lg bg-white/20 flex items-center justify-center">
-                                    <FaCamera className="text-white text-lg" />
-                                </div>
-                                {/* Optional: Inactive state */}
-                                <div className="absolute inset-0 rounded-full bg-black/30"></div>
-                                </div>
-                            </div>
-                            </div>
-                        </div>
-                        <div className="flex items-center flex-col mt-5">
-                            <h3 className="font-semibold mb-2 text-white text-xs">Upload PAN Card PHOTO</h3>
-                            <div className="flex items-center gap-10">
-                            {/* Front Camera */}
-                            <div className="flex flex-col items-center gap-2">
-                                <span className="text-white font-medium text-[7px] tracking-wider">FRONT</span>
-                                <div className="relative">
-                                {/* Camera background circle */}
-                                <div className="w-[46px] h-[46px] rounded-lg bg-white/20 flex items-center justify-center">
-                                    {/* Camera icon - properly centered */}
-                                    <FaCamera className="text-white text-lg" />
-                                </div>
-                                </div>
-                            </div>
-
-                            {/* Back Camera */}
-                            <div className="flex flex-col items-center gap-2">
-                                <span className="text-white font-medium text-[7px] tracking-wider">BACK</span>
-                                <div className="relative">
-                                <div className="w-[46px] h-[46px] rounded-lg bg-white/20 flex items-center justify-center">
-                                    <FaCamera className="text-white text-lg" />
-                                </div>
-                                {/* Optional: Inactive state */}
-                                <div className="absolute inset-0 rounded-full bg-black/30"></div>
-                                </div>
-                            </div>
-                            </div>
-                            <p className="text-red-500 text-[6px] font-bold text-center max-w-full mt-2">
-                                The details on the document should be clearly visible while uploading the picture
-                            </p>
-                            <div className="w-[128px] h-[24px] flex items-center justify-center bg-[#78FF47] border-2 border-white rounded-lg mt-2">
+                        <div className="flex flex-col items-center">
+                                <div className="w-32 h-5 bg-white text-[#581717] rounded-full text-xs flex items-center justify-center">Documents upload</div>
+                                <div 
+                                        className="w-[176px] h-[315px] bg-cover bg-center flex flex-col items-center px-4 py-2 rounded-lg mt-5"
+                                        style={{ backgroundImage: `url(${job})` }}>
+                                                <div className="flex items-center flex-col mt-5">
+                                                        <h3 className="font-semibold mb-2 text-white text-xs">Aadhar Card</h3>
+                                                        <div className="flex items-center gap-10">
+                                                            {/* Front */}
+                                                            <div className="flex flex-col items-center">
+                                                                <span className="text-white font-medium text-[7px] tracking-wider">FRONT</span>
+                                                                <div className="relative">
+                                                                    {user.aadhar_front_img ? (
+                                                                        <img src={user.aadhar_front_img} alt="Aadhar Front" className="w-[46px] h-[46px] rounded-lg object-cover border-2 border-white" />
+                                                                    ) : (
+                                                                        <div className="w-[46px] h-[46px] rounded-lg bg-white/20 flex items-center justify-center">
+                                                                            <FaCamera className="text-white text-lg" />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            {/* Back */}
+                                                            <div className="flex flex-col items-center gap-2">
+                                                                <span className="text-white font-medium text-[7px] tracking-wider">BACK</span>
+                                                                <div className="relative">
+                                                                    {user.aadhar_back_img ? (
+                                                                        <img src={user.aadhar_back_img} alt="Aadhar Back" className="w-[46px] h-[46px] rounded-lg object-cover border-2 border-white" />
+                                                                    ) : (
+                                                                        <div className="w-[46px] h-[46px] rounded-lg bg-white/20 flex items-center justify-center">
+                                                                            <FaCamera className="text-white text-lg" />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                </div>
+                                                <div className="flex items-center flex-col mt-5">
+                                                        <h3 className="font-semibold mb-2 text-white text-xs">PAN Card PHOTO</h3>
+                                                        <div className="flex items-center gap-10">
+                                                            {/* Front */}
+                                                            <div className="flex flex-col items-center gap-2">
+                                                                <span className="text-white font-medium text-[7px] tracking-wider">FRONT</span>
+                                                                <div className="relative">
+                                                                    {user.pan_front_img ? (
+                                                                        <img src={user.pan_front_img} alt="PAN Front" className="w-[46px] h-[46px] rounded-lg object-cover border-2 border-white" />
+                                                                    ) : (
+                                                                        <div className="w-[46px] h-[46px] rounded-lg bg-white/20 flex items-center justify-center">
+                                                                            <FaCamera className="text-white text-lg" />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            {/* No PAN back image in API, so keep as placeholder */}
+                                                            {/* <div className="flex flex-col items-center gap-2">
+                                                                <span className="text-white font-medium text-[7px] tracking-wider">BACK</span>
+                                                                <div className="relative">
+                                                                    <div className="w-[46px] h-[46px] rounded-lg bg-white/20 flex items-center justify-center">
+                                                                        <FaCamera className="text-white text-lg" />
+                                                                    </div>
+                                                                    <div className="absolute inset-0 rounded-full bg-black/30"></div>
+                                                                </div>
+                                                            </div> */}
+                                                        </div>
+                                                        <p className="text-red-500 text-[6px] font-bold text-center max-w-full mt-2">
+                                                                The details on the document should be clearly visible while uploading the picture
+                                                        </p>
+                                                        <div className="w-[128px] h-[24px] flex items-center justify-center bg-[#78FF47] border-2 border-white rounded-lg mt-2">
                                 
-                            </div>
+                                                        </div>
+                                                </div>
+                                </div>
                         </div>
-                </div>
-            </div>
              {/* CARD 3 */}
             <div className="flex flex-col items-center">
                 <div className="w-32 h-5 bg-white text-[#581717] rounded-full text-[6px] flex items-center justify-center">Onboarding/baground verification fee</div>

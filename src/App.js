@@ -2,6 +2,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
+import TermsAndConditions from "./page/TermsAndConditions";
 // import JobOpportunity from './page/JobOpportunity';
 // import PhotoUploadPage from './page/PhotoUploadPage';
 // import UserAccessPage from './page/UserAccessPage';
@@ -19,6 +20,7 @@ function App() {
           <Route path="/details-fillup" element={<DetailsPage />} />
           <Route path="/upload-documents" element={<UploadDocumentPage />} /> */}
           <Route path="/" element={<Header />} />
+          <Route path="/privacy" element={<TermsAndConditions />} />
           {/* Add other routes as needed */}
         </Routes>
       </div>

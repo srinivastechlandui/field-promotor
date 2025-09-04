@@ -1,24 +1,128 @@
+// import React, { useState } from "react";
+// import { FaPaperPlane } from "react-icons/fa";
 
-import React from "react";
+// export default function KeypadModal({ onGoClick, onClose }) {
+//   const [input, setInput] = useState("");
+//   const LOCK_CODE = "5094";
+
+//   const handleKeyPress = (key) => {
+//     if (input.length < 4) {
+//       setInput((prev) => prev + key);
+//     }
+//   };
+
+//   const handleEnter = () => {
+//     if (input === LOCK_CODE) {
+//       onGoClick?.(); // ✅ only proceed if code matches
+//       setInput(""); // reset after success
+//     } else {
+//       alert("❌ Wrong PIN"); // optional feedback
+//       setInput(""); // reset input
+//     }
+//   };
+
+//   return (
+//     <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-40 z-50 flex items-center justify-center">
+//       <div
+//         className="bg-white rounded-lg shadow-lg flex flex-col p-2 relative"
+//         style={{ width: "200px", height: "320px" }}
+//       >
+//         {/* Display Entered PIN */}
+//         <div className="text-center text-lg font-bold py-2 tracking-widest">
+//           {input.split("").map(() => "•").join(" ")}
+//         </div>
+
+//         {/* Keypad */}
+//         <div className="grid grid-cols-3 gap-2 border-4 border-red-600 p-1 bg-red-600 flex-grow">
+//           {["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"].map(
+//             (key) => (
+//               <div
+//                 key={key}
+//                 className="flex items-center justify-center text-black font-bold bg-white cursor-pointer"
+//                 style={{ fontSize: "20px", height: "50px" }}
+//                 onClick={() => {
+//                   if (!isNaN(key)) handleKeyPress(key);
+//                 }}
+//               >
+//                 {key}
+//               </div>
+//             )
+//           )}
+//         </div>
+
+//         {/* Enter Button */}
+//         <div className="absolute bottom-[-30px] left-1/2 -translate-x-1/2">
+//           <button
+//             className="flex items-center justify-center gap-1 text-white font-bold rounded-full shadow-lg"
+//             style={{
+//               background: "linear-gradient(to right, purple, #d4145a)",
+//               fontSize: "16px",
+//               border: "2px solid gold",
+//               padding: "4px 12px",
+//             }}
+//             onClick={handleEnter}
+//           >
+//             Enter
+//             <FaPaperPlane className="w-4 h-4" />
+//           </button>
+//         </div>
+
+//         {/* Close Button */}
+//         <button
+//           onClick={onClose}
+//           className="absolute top-1 right-1 text-red-600 font-bold"
+//         >
+//           ✕
+//         </button>
+//       </div>
+//     </div>
+//   );
+// }
+
+import React, { useState } from "react";
 import { FaPaperPlane } from "react-icons/fa";
 
-export default function KeypadModal({ onGoClick, onClose }) {
+export default function KeypadModal({ lockCode = "5094", onGoClick, onClose }) {
+  const [input, setInput] = useState("");
+
+  const handleKeyPress = (key) => {
+    if (input.length < 4) {
+      setInput((prev) => prev + key);
+    }
+  };
+
+  const handleEnter = () => {
+    if (input === lockCode) {
+      onGoClick?.(); // ✅ proceed if correct
+      setInput("");
+    } else {
+      alert("❌ Wrong PIN");
+      setInput("");
+    }
+  };
+
   return (
-    <div className="fixed top-0 left-0 bg-black bg-opacity-40 z-50">
+    <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-40 z-50 flex items-center justify-center">
       <div
         className="bg-white rounded-lg shadow-lg flex flex-col p-2 relative"
-        style={{
-          width: "200px",
-          height: "300px",
-        }}
+        style={{ width: "200px", height: "320px" }}
       >
+        {/* PIN Display */}
+        <div className="text-center text-lg font-bold py-2 tracking-widest">
+          {input.split("").map(() => "•").join(" ")}
+        </div>
+
+        {/* Keypad */}
         <div className="grid grid-cols-3 gap-2 border-4 border-red-600 p-1 bg-red-600 flex-grow">
           {["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"].map(
             (key) => (
               <div
                 key={key}
-                className="flex items-center justify-center text-black font-bold bg-white"
+                className="flex items-center justify-center text-black font-bold bg-white cursor-pointer"
                 style={{ fontSize: "20px", height: "50px" }}
+                onClick={() => {
+                  if (!isNaN(key)) handleKeyPress(key);
+                }}
               >
                 {key}
               </div>
@@ -26,6 +130,7 @@ export default function KeypadModal({ onGoClick, onClose }) {
           )}
         </div>
 
+        {/* Enter Button */}
         <div className="absolute bottom-[-30px] left-1/2 -translate-x-1/2">
           <button
             className="flex items-center justify-center gap-1 text-white font-bold rounded-full shadow-lg"
@@ -35,12 +140,20 @@ export default function KeypadModal({ onGoClick, onClose }) {
               border: "2px solid gold",
               padding: "4px 12px",
             }}
-             onClick={onGoClick} 
+            onClick={handleEnter}
           >
             Enter
-            <span><FaPaperPlane className="w-4 h-4" /></span>
+            <FaPaperPlane className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Close */}
+        <button
+          onClick={onClose}
+          className="absolute top-1 right-1 text-red-600 font-bold"
+        >
+          ✕
+        </button>
       </div>
     </div>
   );

@@ -3,10 +3,13 @@ import { FaCheck, FaPaperPlane } from "react-icons/fa";
 import KeypadModal from "./KeypadModal";
 import ConfirmModal from "./ConfirmModal";
 
-const ProgressPopup = ({ onClose }) => {
-    const [showMain, setShowMain] = useState(true);
+const ProgressPopup = ({ onClose, user = {} }) => {
+  console.log("user", user);
+  const [showMain, setShowMain] = useState(true);
   const [showKeypad, setShowKeypad] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
+
   return (
     <>
       {/* Main Progress Modal */}
@@ -53,7 +56,7 @@ const ProgressPopup = ({ onClose }) => {
 
                 {/* Step 3 */}
                 <div className="flex flex-col items-center z-10">
-                    <span className="text-lg font-bold text-black">550</span>
+                    <span className="text-lg font-bold text-black">SALARY</span>
                     <div className="w-8 h-8 rounded-full border-2 border-blue-500 bg-white"></div>
                     <span className="text-lg text-gray-700">11</span>
                 </div>
@@ -82,6 +85,7 @@ const ProgressPopup = ({ onClose }) => {
       {/* Keypad Modal */}
     {showKeypad && (
         <KeypadModal
+          lockCode="5011" 
           onGoClick={() => {
             setShowKeypad(true);
             setShowConfirm(true);

@@ -19,7 +19,8 @@ const Header = () => {
   const [showVideosPopup, setShowVideosPopup] = useState(false);
   const [showAccountStatement, setShowAccountStatement] = useState(false);
   const [isUserPopupOpen, setIsUserPopupOpen] = useState(false);
-  const [showPaidEarnings,setShowPaidEarnings]=useState(false);
+  const [showPaidEarnings, setShowPaidEarnings] = useState(false);
+  const [searchText, setSearchText] = useState("");
   return (
     <>
      <section className='w-full flex justify-between items-start px-5 gap-4'>
@@ -61,7 +62,7 @@ const Header = () => {
               </div>
 
               <div className="flex flex-col items-center z-10">
-                <span className="text-xs font-bold text-black">550</span>
+                <span className="text-xs font-bold text-black">SALARY</span>
                 <div className="w-4 h-4 rounded-full border-2 border-blue-500 bg-white"></div>
                 <span className="text-xs text-gray-600">11</span>
               </div>
@@ -115,7 +116,7 @@ const Header = () => {
         </div>
         {/* Search Bar */}
          <div className='w-full mt-4'>
-            <SearchBar />
+            <SearchBar searchText={searchText} setSearchText={setSearchText} />
           </div>
       </div>
       
@@ -132,13 +133,13 @@ const Header = () => {
       </div>
     </section>
     <FilterBar />
-    <MainTable />
+  <MainTable searchText={searchText} />
     <BottomEyeIcon/>
     {isPopupOpen && <ProgressPopup onClose={() => setIsPopupOpen(false)} />}
     {showNotification && <NotificationPopup onClose={() => setShowNotification(false)} />}
     {showVideosPopup && <VideosPopup onClose={() => setShowVideosPopup(false)} />}
     {showAccountStatement && <AccountStatementModal onClose={() => setShowAccountStatement(false)} />}
-      {showPaidEarnings && <PaidEarnings onClose={()=>setShowPaidEarnings(false)}/>}
+    {showPaidEarnings && <PaidEarnings onClose={()=>setShowPaidEarnings(false)}/>}
     {isUserPopupOpen && <UserPopup onClose={() => setIsUserPopupOpen(false)} />}
     </>
   );

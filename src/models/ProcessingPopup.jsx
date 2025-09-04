@@ -1,6 +1,7 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
 /* eslint-disable no-unused-vars */
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import { IoClose } from "react-icons/io5";
 import job from "../Assets/jonoprtunity.png";
 import { FaAngleUp, FaCaretDown, FaCheck, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
@@ -9,7 +10,10 @@ import activeimg from '../Assets/active-img.png';
 import camera from '../Assets/camera.png'
 import selfi from '../Assets/selfi.png';
 import { FaCamera } from "react-icons/fa6";
-export default function ProcessingPopup({onClose,progress = 31})  {
+import BASE_URL from '../utils/Urls';
+
+export default function ProcessingPopup({onClose, user = {}})  {
+    console.log("user", user);
     const [currentPage, setCurrentPage] = useState("main");
     const [activeStep, setActiveStep] = useState(null);
     const [isClose,setIsClose]=useState(true)
@@ -20,12 +24,102 @@ export default function ProcessingPopup({onClose,progress = 31})  {
     { label: "Documents upload", status: "in-progress" },
     { label: "Onboarding/baground verification fee", status: "pending" },
   ];
+  const [couponCode, setCouponCode] = useState("");
+  const [couponData, setCouponData] = useState(null);
+
+  // ✅ Fetch coupon on mount
+  useEffect(() => {
+    if (!user?.user_id) return;
+
+    const fetchCoupon = async () => {
+      try {
+        const response = await axios.get(
+          `${BASE_URL}/admin/coupon/${user.user_id}`
+        //   `http://localhost:8080/api/v1/admin/coupon/${user.user_id}`
+        );
+
+        if (response.data?.result?.length > 0) {
+          setCouponData(response.data.result[0]);
+        }
+      } catch (err) {
+        console.error("❌ Failed to fetch coupon:", err.message);
+      }
+    };
+
+    fetchCoupon();
+  }, [user?.user_id]);
+//   const fetchCoupon = async () => {
+//       try {
+//         const response = await axios.get(
+//           `${BASE_URL}/admin/coupon/${user.user_id}`
+//         //   `http://localhost:8080/api/v1/admin/coupon/${user.user_id}`
+//         );
+
+//         if (response.data?.result?.length > 0) {
+//           setCouponData(response.data.result[0]);
+//         }
+//       } catch (err) {
+//         console.error("❌ Failed to fetch coupon:", err.message);
+//       }
+//     };
+
+   
+  // Format date & time
+const formatDateTime = (isoString) => {
+  if (!isoString) return "";
+  const dateObj = new Date(isoString);
+  const date = dateObj.toLocaleDateString();
+  const time = dateObj.toLocaleTimeString();
+  return `${date} - ${time}`;
+};
+
+// Calculate expiry = created_at + 10 days
+const getExpiryDate = (isoString) => {
+  if (!isoString) return "";
+  const dateObj = new Date(isoString);
+  dateObj.setDate(dateObj.getDate() + 10); // add 10 days
+  const date = dateObj.toLocaleDateString();
+  const time = dateObj.toLocaleTimeString();
+  return `${date} - ${time}`;
+};
+
+   const handleCouponSubmit = async () => {
+        if (!couponCode.trim()) {
+            alert("⚠️ Please enter a coupon code");
+            return;
+        }
+
+        // ✅ Validation: only a-e (case insensitive) and numbers 0-9
+        const validPattern = /^[a-eA-E0-9]+$/;
+        if (!validPattern.test(couponCode)) {
+            alert("⚠️ Coupon code must contain only letters (a-e) and numbers (0-9)");
+            return;
+        }
+
+        try {
+            const response = await axios.post(
+            `${BASE_URL}/admin/coupon/${user.user_id}`,
+            { coupon_code: couponCode }
+            );
+
+            alert(`✅ ${response.data.message}`);
+            setCouponCode(""); // clear input after success
+        } catch (err) {
+            if (err.response) {
+            // Backend responded with an error
+            alert(`❌ ${err.response.data.message}`);
+            } else {
+            // Network or unexpected error
+            alert("❌ Error submitting coupon: " + err.message);
+            }
+        }
+   };
   const handleStepClick = (stepIndex) => {
-    if (steps[stepIndex].status !== "pending") {
-      setActiveStep(stepIndex);
+    setActiveStep(stepIndex);
       if (stepIndex === 0) {
         setCurrentPage("userAccess");
       }else if (stepIndex === 1) {
+       if (steps[stepIndex].status !== "pending") {
         setCurrentPage("photoUpload");
       }else if (stepIndex === 2) {
         setCurrentPage("details");
@@ -34,6 +128,31 @@ export default function ProcessingPopup({onClose,progress = 31})  {
       }
     }
   };
+  const progress = 80;
+
+  const handleStartDuty = async () => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/users/admin/approve/${user.user_id}`,
+      { approved: [5, 6] }
+    );
+
+    if (response.status === 200 || response.status === 201) {
+      alert("✅ Duty started successfully!");
+      onClose(); // close popup
+    } else {
+      alert("⚠️ Failed to start duty, please try again.");
+    }
+  } catch (err) {
+    if (err.response) {
+      alert(`❌ ${err.response.data.message}`);
+    } else {
+      alert("❌ Error starting duty: " + err.message);
+    }
+  }
+};
+
+
   return (
     <div className="fixed inset-0 flex flex-col items-center rounded-lg w-full top-0 bottom-0 overflow-y-auto bg-black bg-opacity-50 animate-[slideDown_0.3s_ease-in-out] origin-top"       
      style={{
@@ -46,7 +165,7 @@ export default function ProcessingPopup({onClose,progress = 31})  {
         <div className="flex items-center justify-center">
             <div className="flex items-center">
                 <div className="w-[624px] h-[106px] rounded-lg bg-white flex items-center justify-center">
-                    <span className="text-[#B100AE] font-bold text-[80px]">Processing</span>
+                    <span className="text-[#B100AE] font-bold text-[80px]">Training....</span>
                 </div>
                 <button  onClick={() =>{onClose()}}
                   className="w-[105px] h-[108px] bg-[#FF0E12] border-black flex items-center justify-center rounded-lg ml-20 mb-20">
@@ -450,11 +569,25 @@ export default function ProcessingPopup({onClose,progress = 31})  {
                     DAYS
                 </div>
                 <div className="w-32 h-32 rounded-full border-2 border-black bg-white">
-
+                  8                      
                 </div>
             </div>
         </div>
         <div className="relative w-[594px] max-w-xl mx-auto my-20">
+            <div className="flex items-start justify-start gap-2 my-5">
+                    <input
+                        type="text"
+                         value={couponCode}
+                         onChange={(e) => setCouponCode(e.target.value)}
+                         placeholder="Enter Coupon Code"
+                         className="w-60 h-10 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-black"
+                    />
+                    <button onClick={handleCouponSubmit}
+                        className="px-5 h-10 rounded-lg bg-green-600 text-white font-bold hover:bg-green-700 transition"
+                    >
+                        Submit
+                    </button>
+            </div>
             {/* Progress Bar Background */}
             <div className="h-[59px] bg-green-600 rounded-full relative border-4 border-white">
                 {/* Golf Ball */}
@@ -472,14 +605,31 @@ export default function ProcessingPopup({onClose,progress = 31})  {
             </div>
             {/* Progress Indicator */}
             <div
-                className="absolute -top-16 font-bold text-red-600 text-4xl"
+                className="absolute -top-4 font-bold text-red-600 text-4xl"
                 style={{ left: `${progress}%`, transform: 'translateX(-50%)' }}
             >
                 <span className="text-xl">{progress}%</span> <FaCaretDown /> 
             </div>
         </div>
 
-        <button className="w-[400px] h-[200px] rounded-full border-2 border-yellow-500 bg-gradient-to-b from-green-500 to-green-700 shadow-md hover:from-green-400 hover:to-green-600 transition-all">
+        {couponData && (
+            <div className="flex flex-col items-center mb-5">
+                <p className="text-white text-xl font-bold">
+                Coupon: <span className="text-yellow-300">{couponData.coupon_code}</span>
+                </p>
+                <p className="text-white text-md">
+                Created At: {formatDateTime(couponData.created_at)}
+                </p>
+                <p className="text-green-300 text-md font-semibold">
+                Coupon valid up to: {getExpiryDate(couponData.created_at)}
+                </p>
+            </div>
+            )}
+
+
+        <button 
+         onClick={handleStartDuty}
+        className="w-[400px] h-[200px] rounded-full border-2 border-yellow-500 bg-gradient-to-b from-green-500 to-green-700 shadow-md hover:from-green-400 hover:to-green-600 transition-all">
             <span className="text-6xl text-white font-bold">START DUTY</span>
         </button>
 

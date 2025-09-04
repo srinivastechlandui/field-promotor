@@ -5,10 +5,10 @@ export default function ConfirmModal({ onYes, onNo }) {
   const [isClosing, setIsClosing] = useState(false);
 
   const handleClose = (callback) => {
-    setIsClosing(true);
     setTimeout(() => {
+      setIsClosing(true);
       callback();
-    },); // Match this with animation duration
+    },); 
   };
   return (
     <div className={`fixed top-0 right-0 bg-black bg-opacity-40 z-50 rounded-lg transition-all duration-500 ease-out ${

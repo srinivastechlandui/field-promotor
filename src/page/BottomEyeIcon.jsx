@@ -35,6 +35,7 @@ export default function BottomEyeIcon({ onClose}){
     )}
     {showKeyPad && (
       <KeypadModal
+       lockCode="2580"  
         onGoClick={() => {
           // setShowKeypad(true);
           setShowConfirm(true);

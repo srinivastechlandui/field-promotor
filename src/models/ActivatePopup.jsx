@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import axios from "axios";
 import { FaBars, FaCamera, FaCaretDown, FaCaretUp, FaComments, FaMapMarkerAlt, FaPhoneAlt, FaPlusCircle, FaStar, FaToggleOff, FaToggleOn} from "react-icons/fa";
 import selfi from '../Assets/selfi.png';
 import activeimg from '../Assets/active-img.png';
@@ -10,9 +11,79 @@ import man from '../Assets/confused_man.png'
 import viewAccount from '../Assets/view-account.png'
 import Accountstmt from '../Assets/Account-stmt.png'
 import blue from '../Assets/purple-blue.png'
-const ActivatePopup = ({onClose}) => {
+import BASE_URL from  '../utils/Urls';
+import ImageModal from "./ImageModal";
+
+const ActivatePopup = ({ user, onClose, image }) => {
     const [isToggled, setIsToggled] = useState(true);
-  return (
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
+    const email = user?.email || "";
+    const aadhar = user?.aadhar_no || "";
+    const employerName = user?.name || user?.employer_name || "";
+    const pan = user?.pan_card_number || "";
+    const ifsc = user?.ifsc_code || "";
+    const bank_account_no = user?.bank_account_no || "";
+    const nomineeName = user?.nominee_name || "";
+    const nomineePhone = user?.nominee_phone_no || "";
+    const profile_img = user?.profile_img || user?.profile_img || "";
+    const aadhar_front_img = user?.aadhar_front_img || "";
+    const aadhar_back_img = user?.aadhar_back_img || activeimg;
+    const pan_front_img = user?.pan_front_img || "";
+    const [isModalOpen, setIsModalOpen] = useState(false);
+        const [selectedImage, setSelectedImage] = useState("");
+    
+        const handleImageClick = (image) => {
+            setSelectedImage(image);
+            setIsModalOpen(true);
+        };
+    
+        const handleClose = () => {
+            setIsModalOpen(false);
+            setSelectedImage("");
+        };
+
+    // Approve/Reject handlers for profile (code 1) and uploads (code 3)
+    const handleApprove = async (code) => {
+        setLoading(true);
+        setError("");
+        setSuccess("");
+        try {
+            // Replace with your actual API endpoint
+            await axios.post(`${BASE_URL}/users/admin/approve/${user.user_id}`, {
+                approved: [code]
+            });
+            setSuccess("Approved successfully");
+            alert("Approved Successfully");
+        } catch (err) {
+            setError("Failed to approve. Try again.");
+            alert("Failed to Approve. Try Again");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleReject = async (code) => {
+        setLoading(true);
+        setError("");
+        setSuccess("");
+        try {
+            // Replace with your actual API endpoint
+            await axios.post(`${BASE_URL}/users/admin/reject/${user.user_id}`, {
+                status_codes: [code]
+            });
+            setSuccess("Rejected successfully");
+            alert("Reject Successfully");
+        } catch (err) {
+            setError("Failed to reject. Try again.");
+            alert("Failed to reject. Try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
     <div 
       className="flex flex-col items-center w-full fixed top-0 bottom-0 overflow-y-auto animate-slideInLeft"
       style={{
@@ -28,6 +99,7 @@ const ActivatePopup = ({onClose}) => {
       {/* Top Section */}
         <div className="flex justify-between items-center w-full mb-6 scale-90">
             <div className="flex flex-col items-start">
+ 
                 {/* Star Icon */}
                 <div className="relative flex items-center">
                     <FaStar className="text-[#D9D9D9]" style={{ fontSize: '80px' }}/>
@@ -63,79 +135,108 @@ const ActivatePopup = ({onClose}) => {
                 className="w-[168px] h-[300px] bg-cover bg-center flex flex-col items-center px-4 py-10 rounded-lg"
                 style={{ backgroundImage: `url(${selfi})` }}>
                 <div className="flex flex-col items-center">
-                    <img src={activeimg} alt="" />
-                    <img src={camera} alt="" className="mt-6" />
-                    <div className="w-[128px] h-[24px] flex items-center justify-center bg-[#FF0E12] text-white rounded-lg mt-10">
-                        REJECT
-                    </div> 
+                    <img src={profile_img} alt="Profile" 
+                    onClick={() => handleImageClick(user?.profile_img)}
+                    className="w-24 h-24 rounded-full object-cover border-4 border-white" />
+                    {/* <img src={activeimg} alt="activeimg" /> */}
+                    <img src={camera} alt="camera" className="mt-6" />
+                    <div className="flex gap-2 mt-10">
+                        <button
+                            className="w-[64px] h-[24px] flex items-center justify-center bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition"
+                            disabled={loading}
+                            onClick={() => handleApprove(1)}
+                        >
+                            Approve
+                        </button>
+                        <button
+                            className="w-[64px] h-[24px] flex items-center justify-center bg-[#FF0E12] text-white rounded-lg text-xs font-bold hover:bg-red-700 transition"
+                            disabled={loading}
+                            onClick={() => handleReject(1)}
+                        >
+                            Reject
+                        </button>
+                    </div>
                 </div>
             </div>
-                <div 
-                    className="w-[176px] h-[315px] bg-cover bg-center flex flex-col items-center px-4 py-2 rounded-lg"
-                    style={{ backgroundImage: `url(${job})` }}>
-                        <div className="flex items-center flex-col">
-                            <h3 className="font-semibold mb-2 text-white text-xs">Upload Aadhar Card</h3>
-                            <div className="flex items-center gap-10">
-                            {/* Front Camera */}
-                            <div className="flex flex-col items-center">
-                                <span className="text-white font-medium text-[7px] tracking-wider">FRONT</span>
-                                <div className="relative">
-                                {/* Camera background circle */}
-                                <div className="w-[46px] h-[46px] rounded-lg bg-white/20 flex items-center justify-center">
-                                    {/* Camera icon - properly centered */}
-                                    <FaCamera className="text-white text-lg" />
-                                </div>
-                                </div>
-                            </div>
-
-                            {/* Back Camera */}
-                            <div className="flex flex-col items-center gap-2">
-                                <span className="text-white font-medium text-[7px] tracking-wider">BACK</span>
-                                <div className="relative">
-                                <div className="w-[46px] h-[46px] rounded-lg bg-white/20 flex items-center justify-center">
-                                    <FaCamera className="text-white text-lg" />
-                                </div>
-                                {/* Optional: Inactive state */}
-                                <div className="absolute inset-0 rounded-full bg-black/30"></div>
-                                </div>
-                            </div>
+            <div 
+                className="w-[176px] h-[315px] bg-cover bg-center flex flex-col items-center px-4 py-2 rounded-lg"
+                style={{ backgroundImage: `url(${job})` }}>
+                <div className="flex items-center flex-col">
+                    <h3 className="font-semibold mb-2 text-white text-xs">Upload Aadhar Card</h3>
+                    <div className="flex items-center gap-10">
+                        {/* Front Image */}
+                        <div className="flex flex-col items-center">
+                            <span className="text-white font-medium text-[7px] tracking-wider">FRONT</span>
+                            <div className="relative">
+                                {aadhar_front_img ? (
+                                    <img src={aadhar_front_img} alt="Aadhar Front"
+                                    onClick={() => handleImageClick(user?.aadhar_front_img)}
+                                    className="w-[46px] h-[46px] rounded-lg object-cover border-2 border-white" />
+                                ) : (
+                                    <div className="w-[46px] h-[46px] rounded-lg bg-white/20 flex items-center justify-center">
+                                        <FaCamera className="text-white text-lg" />
+                                    </div>
+                                )}
                             </div>
                         </div>
-                        <div className="flex items-center flex-col mt-5">
-                            <h3 className="font-semibold mb-2 text-white text-xs">Upload PAN Card PHOTO</h3>
-                            <div className="flex items-center gap-10">
-                            {/* Front Camera */}
-                            <div className="flex flex-col items-center gap-2">
-                                <span className="text-white font-medium text-[7px] tracking-wider">FRONT</span>
-                                <div className="relative">
-                                {/* Camera background circle */}
-                                <div className="w-[46px] h-[46px] rounded-lg bg-white/20 flex items-center justify-center">
-                                    {/* Camera icon - properly centered */}
-                                    <FaCamera className="text-white text-lg" />
-                                </div>
-                                </div>
-                            </div>
-
-                            {/* Back Camera */}
-                            <div className="flex flex-col items-center gap-2">
-                                <span className="text-white font-medium text-[7px] tracking-wider">BACK</span>
-                                <div className="relative">
-                                <div className="w-[46px] h-[46px] rounded-lg bg-white/20 flex items-center justify-center">
-                                    <FaCamera className="text-white text-lg" />
-                                </div>
-                                {/* Optional: Inactive state */}
-                                <div className="absolute inset-0 rounded-full bg-black/30"></div>
-                                </div>
-                            </div>
-                            </div>
-                            <p className="text-red-500 text-[6px] font-bold text-center max-w-full mt-2">
-                                The details on the document should be clearly visible while uploading the picture
-                            </p>
-                            <div className="w-[128px] h-[24px] flex items-center justify-center bg-[#FF0E12] text-white rounded-lg mt-2">
-                                REJECT
+                        {/* Back Image (no label, just image or camera icon) */}
+                        <div className="flex flex-col items-center">
+                            <span className="text-white font-medium text-[7px] tracking-wider">Back</span>
+                            <div className="relative">
+                                {aadhar_back_img ? (
+                                    <img src={aadhar_back_img} alt="Aadhar Back" 
+                                    onClick={() => handleImageClick(user?.aadhar_back_img)}
+                                    className="w-[46px] h-[46px] rounded-lg object-cover border-2 border-white" />
+                                ) : (
+                                    <div className="w-[46px] h-[46px] rounded-lg bg-white/20 flex items-center justify-center">
+                                        <FaCamera className="text-white text-lg" />
+                                    </div>
+                                )}
                             </div>
                         </div>
+                    </div>
                 </div>
+                {/* PAN Card Upload */}
+                <div className="flex items-center flex-col mt-5">
+                    <h3 className="font-semibold mb-2 text-white text-xs">Upload PAN Card PHOTO</h3>
+                    <div className="flex items-center gap-10">
+                        {/* Front Image */}
+                        <div className="flex flex-col items-center gap-2">
+                            <span className="text-white font-medium text-[7px] tracking-wider">FRONT</span>
+                            <div className="relative">
+                                {pan_front_img ? (
+                                    <img src={pan_front_img} alt="PAN Front" 
+                                    onClick={() => handleImageClick(user?.pan_front_img)}
+                                    className="w-[46px] h-[46px] rounded-lg object-cover border-2 border-white" />
+                                ) : (
+                                    <div className="w-[46px] h-[46px] rounded-lg bg-white/20 flex items-center justify-center">
+                                        <FaCamera className="text-white text-lg" />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    <p className="text-red-500 text-[6px] font-bold text-center max-w-full mt-2">
+                        The details on the document should be clearly visible while uploading the picture
+                    </p>
+                    <div className="flex gap-2 mt-2">
+                        <button
+                            className="w-[64px] h-[24px] flex items-center justify-center bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition"
+                            disabled={loading}
+                            onClick={() => handleApprove(3)}
+                        >
+                            Approve
+                        </button>
+                        <button
+                            className="w-[64px] h-[24px] flex items-center justify-center bg-[#FF0E12] text-white rounded-lg text-xs font-bold hover:bg-red-700 transition"
+                            disabled={loading}
+                            onClick={() => handleReject(3)}
+                        >
+                            Reject
+                        </button>
+                    </div>
+                </div>
+            </div>
                 <div 
                     className="w-[192px] h-[342px] bg-cover bg-center flex flex-col px-4 py-4 rounded-lg"
                     style={{ backgroundImage: `url(${green})` }}>
@@ -309,14 +410,14 @@ const ActivatePopup = ({onClose}) => {
                 <h2 className="text-xs font-bold text-white">View Account</h2>
                 </div>
                 <div className="space-y-2">
-                <input type="text" placeholder="EMAIL" className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" />
-                <input type="text" placeholder="AADHAR NO." className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" />
-                <input type="text" placeholder="EMPLOYER NAME" className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" />
-                <input type="text" placeholder="PAN CARD" className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" />
-                <input type="text" placeholder="IFSC CODE" className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" />
-                <input type="text" placeholder="BANK ACCOUNT" className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" />
-                <input type="text" placeholder="NOMINEE NAME" className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" />
-                <input type="text" placeholder="NOMINEE Ph NO." className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" />
+                <input type="text" value={email} placeholder="EMAIL" className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
+                <input type="text" value={aadhar} placeholder="AADHAR NO." className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
+                <input type="text" value={employerName} placeholder="EMPLOYER NAME" className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
+                <input type="text" value={pan} placeholder="PAN CARD" className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
+                <input type="text" value={ifsc} placeholder="IFSC CODE" className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
+                <input type="text" value={bank_account_no} placeholder="BANK ACCOUNT" className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
+                <input type="text" value={nomineeName} placeholder="NOMINEE NAME" className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
+                <input type="text" value={nomineePhone} placeholder="NOMINEE Ph NO." className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
                 </div>
             </div>
             {/* card2 */}
@@ -386,6 +487,17 @@ const ActivatePopup = ({onClose}) => {
         <div className="w-[611px] h-[64px] bg-[#FF0E12] rounded-lg flex items-center justify-center">
             <span className="text-white text-bold flex items-center">DEACTIVATE ACCOUNT</span>
         </div>
+         <ImageModal
+            imageUrl={selectedImage}
+            isOpen={isModalOpen}
+            onClose={handleClose}
+          />         
+        {/* Feedback messages */}
+        {(error || success) && (
+            <div className={`mt-4 text-center text-sm font-bold ${error ? "text-red-600" : "text-green-600"}`}>
+                {error || success}
+            </div>
+        )}
     </div>
   );
 };
