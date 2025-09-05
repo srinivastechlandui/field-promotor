@@ -3,10 +3,10 @@ import { FaChevronUp, FaTimes } from 'react-icons/fa';
 import job from '../Assets/jonoprtunity.png';
 import ConfirmModal from './ConfirmModal';
 import axios from 'axios'; 
-// import BASE_URL from '../utils/Urls';
+import BASE_URL from '../utils/Urls';
 
 const UserPopup = ({ onClose }) => {
-const BASE_URL= "http://localhost:8080/api/v1";
+// const BASE_URL= "http://localhost:8080/api/v1";
   const [showMain, setShowMain] = useState(true);
   const [showConfirm, setShowConfirm] = useState(false);
 

@@ -6,7 +6,7 @@ import UnFilledPopup from "../models/UnFilledPopup";
 import UnVerifiedPopup from "../models/UnverifiedPopup";
 import ProcessingPopup from "../models/ProcessingPopup";
 import BASE_URL from "../utils/Urls"
-const MainTable = ({ searchText }) => {
+const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isActivatePopupOpen, setIsActivatePopupOpen] = useState(false);
   const [isUnFilledPopupOpen, setIsUnFilledPopupOpen] = useState(false);
@@ -131,20 +131,31 @@ const MainTable = ({ searchText }) => {
     }, {});
   };
 
-  // ✅ Filtering by search text
-  const filteredData = searchText !== undefined
-    ? tableData.filter((row) => {
-      const search = searchText.trim().toLowerCase();
-      return (
-        row.user_id?.toString().toLowerCase().includes(search) ||
-        row.employer_name?.toLowerCase().includes(search) ||
-        row.group?.toLowerCase().includes(search) ||
-        row.email?.toLowerCase().includes(search) ||
-        row.status?.toLowerCase().includes(search) ||
-        row.phone_number.includes(search)
-      );
-    })
-    : tableData;
+  // ✅ Filtering by search text, filterOption, and userIdFilters
+  let filteredData = tableData;
+  if (searchText !== undefined && searchText.trim() !== "") {
+    const search = searchText.trim().toLowerCase();
+    filteredData = filteredData.filter((row) => (
+      row.user_id?.toString().toLowerCase().includes(search) ||
+      row.employer_name?.toLowerCase().includes(search) ||
+      row.group?.toLowerCase().includes(search) ||
+      row.email?.toLowerCase().includes(search) ||
+      row.status?.toLowerCase().includes(search) ||
+      row.phone_number.includes(search)
+    ));
+  }
+  if (filterOption && filterOption !== "All") {
+    filteredData = filteredData.filter((row) => row.group === filterOption);
+  }
+  // Apply userIdFilters if any are true
+  const filterKeys = Object.keys(userIdFilters).filter(k => userIdFilters[k]);
+  if (filterKeys.length > 0) {
+    filteredData = filteredData.filter(row => {
+      // Example: adjust logic to match your data structure and filter meaning
+      // Here, we just check if the row has a truthy property for each filter
+      return filterKeys.every(key => row[key]);
+    });
+  }
 
   const toggleGroup = (groupName) => {
     setOpenGroup((prev) => (prev === groupName ? null : groupName));
@@ -443,7 +454,7 @@ const MainTable = ({ searchText }) => {
           )}
         </div>
       ))}
-      <div className='mx-2 w-full h-[132px] bg-blue-200 flex flex-col items-center justify-center
+      {/* <div className='mx-2 w-full h-[132px] bg-blue-200 flex flex-col items-center justify-center
                            border-2 border-red-500 mt-4 shadow-lg relative rounded-lg'>
         <div className='flex items-center justify-between w-full px-4 text-[#29A80C] font-bold'>
           <p>NO OF LAST PAID EARNINGS ACCOUNTS</p>
@@ -457,7 +468,7 @@ const MainTable = ({ searchText }) => {
           <p>NO OF BANKED EARNINGS ACCOUNTS</p>
           <span>$$$$$$$$$$</span>
         </div>
-      </div>
+      </div> */}
     </>
   );
 };

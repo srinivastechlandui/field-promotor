@@ -101,7 +101,7 @@ const ActivatePopup = ({ user, onClose, image }) => {
             <div className="flex flex-col items-start">
  
                 {/* Star Icon */}
-                <div className="relative flex items-center">
+                {/* <div className="relative flex items-center">
                     <FaStar className="text-[#D9D9D9]" style={{ fontSize: '80px' }}/>
                     <div className="absolute inset-0 flex items-center justify-center">
                         <FaMapMarkerAlt
@@ -113,7 +113,7 @@ const ActivatePopup = ({ user, onClose, image }) => {
                         className="absolute mt-14 w-[132px] h-[72px] flex items-center justify-center">
                         <span className="text-[#43C701] font-bold text-xl">Activate</span>
                     </div>
-                </div>
+                </div> */}
             </div>
             
             {/* Right Side - Triangle with Unactivate */}
@@ -426,13 +426,13 @@ const ActivatePopup = ({ user, onClose, image }) => {
                 style={{ backgroundImage: `url(${Accountstmt})` }}>
                 <div className="flex items-center gap-5 mb-2 shadow-[ rgb(107 114 128)]">
                     <FaBars className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-[#3a1e0b] font-bold"/>
-                    <h2 className="text-xs font-bold text-black">View Account</h2>
+                    <h2 className="text-xs font-bold text-black">Account Statement</h2>
                 </div>
                 <div className="flex items-center justify-center gap-2 border-b-2 border-gray-600 w-[112px] mb-3">
                     <span className="text-semibold text-[8px]">All</span>
                     <span className="text-semibold text-[8px]">Paid</span>
                     <span className="text-semibold text-[8px]">Pending</span>
-                    <span className="text-semibold text-[8px]">live run</span>
+                    {/* <span className="text-semibold text-[8px]">live run</span> */}
                 </div>
                 <div className="flex flex-col w-[139px] h-[1.5px] space-y-6">
                     {[...Array(10)].map((_, i) => (

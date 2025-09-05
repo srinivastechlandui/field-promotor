@@ -21,6 +21,10 @@ const Header = () => {
   const [isUserPopupOpen, setIsUserPopupOpen] = useState(false);
   const [showPaidEarnings, setShowPaidEarnings] = useState(false);
   const [searchText, setSearchText] = useState("");
+  // Lifted filter state
+  const [selectedOption, setSelectedOption] = useState("All");
+  // UserIdPopup filter state
+  const [userIdFilters, setUserIdFilters] = useState({});
   return (
     <>
      <section className='w-full flex justify-between items-start px-5 gap-4'>
@@ -132,8 +136,23 @@ const Header = () => {
         </div>
       </div>
     </section>
-    <FilterBar />
-  <MainTable searchText={searchText} />
+    <FilterBar selectedOption={selectedOption} setSelectedOption={setSelectedOption} setUserIdFilters={setUserIdFilters} />
+  <MainTable searchText={searchText} filterOption={selectedOption} userIdFilters={userIdFilters} />
+  <div className='mx-2 w-full h-[132px] bg-blue-200 flex flex-col items-center justify-center
+                           border-2 border-red-500 mt-30 shadow-lg relative rounded-lg'>
+        <div className='flex items-center justify-between w-full px-4 text-[#29A80C] font-bold'>
+          <p>NO OF LAST PAID EARNINGS ACCOUNTS</p>
+          <span>$$$$$$$$$$</span>
+        </div>
+        <div className='flex items-center justify-between w-full px-4 text-[#A80C0F] font-bold'>
+          <p>NO OF PENDING PAYOUT LEFT ACCOUNTS ACCOUNTS</p>
+          <span>$$$$$$$$$$</span>
+        </div>
+        <div className='flex items-center justify-between w-full px-4 text-[#B100AE] font-bold'>
+          <p>NO OF BANKED EARNINGS ACCOUNTS</p>
+          <span>$$$$$$$$$$</span>
+        </div>
+      </div>
     <BottomEyeIcon/>
     {isPopupOpen && <ProgressPopup onClose={() => setIsPopupOpen(false)} />}
     {showNotification && <NotificationPopup onClose={() => setShowNotification(false)} />}

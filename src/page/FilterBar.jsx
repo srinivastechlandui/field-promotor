@@ -2,9 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FiFilter, FiChevronDown } from 'react-icons/fi';
 import UserIdPopup from '../models/UserIdPopup';
 
-const FilterBar = () => {
+const FilterBar = ({ selectedOption, setSelectedOption, setUserIdFilters }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedOption, setSelectedOption] = useState("All");
   const [userIdPopup, setUserIdPopup] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -82,7 +81,7 @@ const FilterBar = () => {
         </div>
       )}
     </div>
-    { userIdPopup && <UserIdPopup onClose={() => setUserIdPopup(false)} />}
+  { userIdPopup && <UserIdPopup onClose={() => setUserIdPopup(false)} setFilters={setUserIdFilters} />}
     </>
   );
 };

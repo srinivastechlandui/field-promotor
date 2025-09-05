@@ -565,11 +565,11 @@ const getExpiryDate = (isoString) => {
                     <span>Time[21:32:17]</span>
                 </div>
                 <div className="w-52 h-14 bg-[#D9D9D9] text-black font-extrabold text-5xl
-                  flex items-center justify-center rounded-lg mb-10">
+                  flex items-center justify-center rounded-lg mb-10 ">
                     DAYS
                 </div>
                 <div className="w-32 h-32 rounded-full border-2 border-black bg-white">
-                  8                      
+                 <div className="flex items-center justify-center font-bold text-3xl mt-10">8</div>                     
                 </div>
             </div>
         </div>
