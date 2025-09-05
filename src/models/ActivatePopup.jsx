@@ -15,6 +15,7 @@ import BASE_URL from  '../utils/Urls';
 import ImageModal from "./ImageModal";
 
 const ActivatePopup = ({ user, onClose, image }) => {
+    
     const [isToggled, setIsToggled] = useState(true);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -403,21 +404,29 @@ const ActivatePopup = ({ user, onClose, image }) => {
         <div className="flex items-center justify-between gap-10 mb-5">
             {/* card1 */}
             <div 
-                className="w-[218px] h-[398px] bg-cover bg-center flex flex-col items-center px-4 py-2 rounded-lg"
+                className="w-[218px] h-[468px] bg-cover bg-center flex flex-col items-center px-4 py-2 rounded-lg"
                 style={{ backgroundImage: `url(${viewAccount})` }}>
                 <div className="flex items-center gap-5 mb-5">
                 <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-[#3a1e0b] font-bold">👤</div>
                 <h2 className="text-xs font-bold text-white">View Account</h2>
                 </div>
                 <div className="space-y-2">
-                <input type="text" value={email} placeholder="EMAIL" className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
-                <input type="text" value={aadhar} placeholder="AADHAR NO." className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
-                <input type="text" value={employerName} placeholder="EMPLOYER NAME" className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
-                <input type="text" value={pan} placeholder="PAN CARD" className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
-                <input type="text" value={ifsc} placeholder="IFSC CODE" className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
-                <input type="text" value={bank_account_no} placeholder="BANK ACCOUNT" className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
-                <input type="text" value={nomineeName} placeholder="NOMINEE NAME" className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
-                <input type="text" value={nomineePhone} placeholder="NOMINEE Ph NO." className="w-full px-3 py-2 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
+                    <label className="block text-white text-[7px] ">EMAIL.</label>
+                <input type="text" value={email} placeholder="EMAIL" className="w-full px-4 py-1 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
+                <label className="block text-white text-[7px] ">AADHAR NO.</label>
+                <input type="text" value={aadhar} placeholder="AADHAR NO." className="w-full px-4 py-1 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
+                <label className="block text-white text-[7px] ">EMPLOYER NAME.</label>
+                <input type="text" value={employerName} placeholder="EMPLOYER NAME" className="w-full px-4 py-1 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
+                <label className="block text-white text-[7px]">PAN CARD.</label>
+                <input type="text" value={pan} placeholder="PAN CARD" className="w-full px-4 py-1 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
+                <label className="block text-white text-[7px]">IFSC CODE.</label>
+                <input type="text" value={ifsc} placeholder="IFSC CODE" className="w-full px-4 py-1 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
+                <label className="block text-white text-[7px]">BANK ACCOUNT.</label>
+                <input type="text" value={bank_account_no} placeholder="BANK ACCOUNT" className="w-full px-4 py-1 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
+                <label className="block text-white text-[7px]">NOMINEE NAME.</label>
+                <input type="text" value={nomineeName} placeholder="NOMINEE NAME" className="w-full px-4 py-1 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
+                <label className="block text-white text-[7px] ">NOMINEE PH NO.</label>
+                <input type="text" value={nomineePhone} placeholder="NOMINEE Ph NO." className="w-full px-4 py-1 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
                 </div>
             </div>
             {/* card2 */}

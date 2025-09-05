@@ -3,6 +3,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import TermsAndConditions from "./page/TermsAndConditions";
+import LoginPage from './page/Login';
 // import JobOpportunity from './page/JobOpportunity';
 // import PhotoUploadPage from './page/PhotoUploadPage';
 // import UserAccessPage from './page/UserAccessPage';
@@ -19,7 +20,9 @@ function App() {
           <Route path="/photo-upload" element={<PhotoUploadPage />} />
           <Route path="/details-fillup" element={<DetailsPage />} />
           <Route path="/upload-documents" element={<UploadDocumentPage />} /> */}
-          <Route path="/" element={<Header />} />
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/home" element={<Header />} /> {/* Header page */}
+
           <Route path="/privacy" element={<TermsAndConditions />} />
           {/* Add other routes as needed */}
         </Routes>

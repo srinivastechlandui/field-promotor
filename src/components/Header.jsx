@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
+import { useNavigate } from "react-router-dom"; // import at the top
 import header from '../Assets/headerbg.png';
 import { FaBell } from 'react-icons/fa';
 import profile from '../Assets/profile.png'
@@ -25,6 +26,18 @@ const Header = () => {
   const [selectedOption, setSelectedOption] = useState("All");
   // UserIdPopup filter state
   const [userIdFilters, setUserIdFilters] = useState({});
+    const navigate = useNavigate(); // initialize navigate
+    useEffect(() => {
+    const token = localStorage.getItem("jwtToken");
+    if (!token) {
+      navigate("/", { replace: true }); // redirect to login if no token
+    }
+  }, [navigate]);
+  // existing state hooks...
+  const handleLogout = () => {
+    // Optionally clear user-related state here
+    navigate("/", { replace: true }); // redirect to login and prevent back
+  };
   return (
     <>
      <section className='w-full flex justify-between items-start px-5 gap-4'>
@@ -116,17 +129,24 @@ const Header = () => {
           <div onClick={() => setShowPaidEarnings(true)}
             className="w-[108px] h-[108px] rounded-lg bg-white shadow-md flex items-center justify-center aspect-square">
             <FaBell className="text-green-500 rounded-lg w-[90%] h-[90%]" />
-          </div>  
+          </div> 
+          <button
+              onClick={handleLogout}
+              className="absolute top-2 right-4 bg-red-500 text-white px-2 py-2 rounded-md hover:bg-red-600 transition-colors"
+            >
+              Logout
+            </button> 
         </div>
         {/* Search Bar */}
          <div className='w-full mt-4'>
             <SearchBar searchText={searchText} setSearchText={setSearchText} />
           </div>
+           
       </div>
       
       {/* Profile Image */}
      <div onClick={() => setIsUserPopupOpen(true)}
-        className="relative flex-shrink-0 w-[241px] h-[241px]">
+        className="relative flex-shrink-0 w-[241px] h-[241px] mt-[40px]">
         <div className="absolute inset-0 bg-white rounded-3xl shadow-lg overflow-hidden">
           <img 
             src={profile} 
@@ -136,7 +156,7 @@ const Header = () => {
         </div>
       </div>
     </section>
-    <FilterBar selectedOption={selectedOption} setSelectedOption={setSelectedOption} setUserIdFilters={setUserIdFilters} />
+    {/* <FilterBar selectedOption={selectedOption} setSelectedOption={setSelectedOption} setUserIdFilters={setUserIdFilters} /> */}
   <MainTable searchText={searchText} filterOption={selectedOption} userIdFilters={userIdFilters} />
   <div className='mx-2 w-full h-[132px] bg-blue-200 flex flex-col items-center justify-center
                            border-2 border-red-500 mt-30 shadow-lg relative rounded-lg'>
