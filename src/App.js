@@ -8,11 +8,11 @@ import LoginPage from './page/Login';
 // import PhotoUploadPage from './page/PhotoUploadPage';
 // import UserAccessPage from './page/UserAccessPage';
 // import DetailsPage from './page/DetailsPage';
-// import UploadDocumentPage from './page/UploadDocumentPage';
+// import UploadDocumentPage from './page/UploadDocumentPage'; 
 
 function App() {
   return (
-    
+     
       <div className="min-h-screen bg-gray-100 p-4">
         <Routes>
           {/* <Route path="/" element={<JobOpportunity />} />

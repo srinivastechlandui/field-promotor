@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import "../App.css";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -10,21 +11,40 @@ export default function LoginPage() {
 
   const navigate = useNavigate();
 
-  const DUMMY_USERNAME = "kiran";
-  const DUMMY_PASSWORD = "12345";
+  const DUMMY_USERNAME = "Admin";
+  const DUMMY_PASSWORD = "Admin123";
+
+  useEffect(() => {
+    
+    const sessionActive = localStorage.getItem("sessionActive");
+    
+    if (!sessionActive) {
+    
+      localStorage.removeItem("jwtToken");
+    }
+    
+  
+    const handleBeforeUnload = () => {
+      localStorage.removeItem("sessionActive");
+    };
+    
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    
+   
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
 
   const handleLogin = (e) => {
     e.preventDefault();
 
     if (username === DUMMY_USERNAME && password === DUMMY_PASSWORD) {
-      
       const dummyToken = "dummy-jwt-token-1234567890";
-
       localStorage.setItem("jwtToken", dummyToken);
-
+      
+      localStorage.setItem("sessionActive", "true");
       alert("Login Successful!");
-
-  
       navigate("/home", { replace: true });
     } else {
       setError("Invalid username or password");
@@ -32,32 +52,35 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="w-screen h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-[320px]">
-        <h2 className="text-2xl font-semibold text-center mb-6">Login</h2>
-        <form onSubmit={handleLogin} className="flex flex-col gap-4">
-          <input
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            required
-          />
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          <button
-            type="submit"
-            className="bg-yellow-400 text-white font-semibold py-2 rounded-md hover:bg-yellow-500 transition-colors"
-          >
-            Login
+     <div className="flex flex-col items-center justify-center fixed inset-0  overflow-hidden">
+      <div className="card">
+        <a className="login">Log in</a>
+
+        <form onSubmit={handleLogin} className="flex flex-col items-center gap-6">
+          <div className="inputBox">
+            <input
+              type="text"
+              required="required"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+            <span className="user">Username</span>
+          </div>
+
+          <div className="inputBox">
+            <input
+              type="password"
+              required="required"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <span>Password</span>
+          </div>
+
+          {error && <p style={{ color: "red", fontSize: "12px" }}>{error}</p>}
+
+          <button type="submit" className="enter">
+            Enter
           </button>
         </form>
       </div>
