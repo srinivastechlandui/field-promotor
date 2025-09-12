@@ -22,21 +22,17 @@ const Header = () => {
   const [isUserPopupOpen, setIsUserPopupOpen] = useState(false);
   const [showPaidEarnings, setShowPaidEarnings] = useState(false);
   const [searchText, setSearchText] = useState("");
-  // Lifted filter state
   const [selectedOption, setSelectedOption] = useState("All");
-  // UserIdPopup filter state
   const [userIdFilters, setUserIdFilters] = useState({});
-    const navigate = useNavigate(); // initialize navigate
-    useEffect(() => {
+    const navigate = useNavigate(); 
+  useEffect(() => {
     const token = localStorage.getItem("jwtToken");
     if (!token) {
-      navigate("/", { replace: true }); // redirect to login if no token
+      navigate("/", { replace: true }); 
     }
   }, [navigate]);
-  // existing state hooks...
   const handleLogout = () => {
-    // Optionally clear user-related state here
-    navigate("/", { replace: true }); // redirect to login and prevent back
+    navigate("/", { replace: true }); 
   };
   return (
     <>
@@ -130,12 +126,22 @@ const Header = () => {
             className="w-[108px] h-[108px] rounded-lg bg-white shadow-md flex items-center justify-center aspect-square">
             <FaBell className="text-green-500 rounded-lg w-[90%] h-[90%]" />
           </div> 
-          <button
+          <div className="absolute top-2 right-5 flex gap-4 mr-5">
+            <button
+              className="bg-blue-500 text-white px-2 py-2 rounded-md hover:bg-blue-600 transition-colors"
+              onClick={() => navigate("/privacy")}
+            >
+              Privacy
+            </button>
+            <button
               onClick={handleLogout}
-              className="absolute top-2 right-4 bg-red-500 text-white px-2 py-2 rounded-md hover:bg-red-600 transition-colors"
+              className="bg-red-500 text-white px-2 py-2 rounded-md hover:bg-red-600 transition-colors"
             >
               Logout
-            </button> 
+            </button>
+          </div>
+
+          
         </div>
         {/* Search Bar */}
          <div className='w-full mt-4'>
@@ -158,7 +164,7 @@ const Header = () => {
     </section>
     {/* <FilterBar selectedOption={selectedOption} setSelectedOption={setSelectedOption} setUserIdFilters={setUserIdFilters} /> */}
   <MainTable searchText={searchText} filterOption={selectedOption} userIdFilters={userIdFilters} />
-  <div className='mx-2 w-full h-[132px] bg-blue-200 flex flex-col items-center justify-center
+  {/* <div className='mx-2 w-full h-[132px] bg-blue-200 flex flex-col items-center justify-center
                            border-2 border-red-500 mt-30 shadow-lg relative rounded-lg'>
         <div className='flex items-center justify-between w-full px-4 text-[#29A80C] font-bold'>
           <p>NO OF LAST PAID EARNINGS ACCOUNTS</p>
@@ -172,7 +178,7 @@ const Header = () => {
           <p>NO OF BANKED EARNINGS ACCOUNTS</p>
           <span>$$$$$$$$$$</span>
         </div>
-      </div>
+      </div> */}
     <BottomEyeIcon/>
     {isPopupOpen && <ProgressPopup onClose={() => setIsPopupOpen(false)} />}
     {showNotification && <NotificationPopup onClose={() => setShowNotification(false)} />}

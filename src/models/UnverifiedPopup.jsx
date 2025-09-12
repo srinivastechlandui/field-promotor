@@ -511,23 +511,18 @@ export default function UnverifiedPopup({ user = {}, onClose, image }) {
                                     <div className="relative">
                                         <div className="w-[46px] h-[46px] rounded-lg bg-white/20 flex items-center justify-center">
                                             <div className="relative">
-                                                {/* {(user.aadhar_back_img) ? (
-                                                    <img src={user.aadhar_back_img} alt="Aadhar Front" onClick={() => handleImageClick(user.aadhar_back_img)} className="w-[46px] h-[46px] rounded-lg object-cover border-2 border-white" />
-                                                ) : (
-                                                    <div className="w-[46px] h-[46px] rounded-lg bg-white/20 flex items-center justify-center">
-                                                        <FaCamera className="text-white text-lg" />
-                                                    </div>
-                                                )} */}
+                                                
                                                 {(user.aadhar_back_img) ? (
-                                                    <img src={user.aadhar_front_img}  onClick={() => handleImageClick(user?.aadhar_back_img)} alt="Aadhar back" className="w-[46px] h-[46px] rounded-lg object-cover border-2 border-white" />
+                                                    <img src={user.aadhar_back_img}  onClick={() => handleImageClick(user?.aadhar_back_img)} alt="Aadhar Back" className="w-[46px] h-[46px] rounded-lg object-cover border-2 border-white" />
                                                 ) : (
                                                     <div className="w-[46px] h-[46px] rounded-lg bg-white/20 flex items-center justify-center">
                                                         <FaCamera className="text-white text-lg" />
                                                     </div>
                                                 )}
+                                               
                                             </div>
                                         </div>
-                                        <div className="absolute inset-0 rounded-full bg-black/30"></div>
+                                        {/* <div className="absolute inset-0 rounded-full bg-black/30"></div> */}
                                     </div>
                                 </div>
                             </div>
@@ -590,7 +585,7 @@ export default function UnverifiedPopup({ user = {}, onClose, image }) {
                                 ? "bg-[#FC0A0A] text-white font-bold opacity-50 cursor-not-allowed pointer-events-none" // ✅ Rejected (disabled)
                                 : (approvedCodes.includes(3) || user.status_code === 3)
                                     ? "bg-gray-500 text-white cursor-not-allowed pointer-events-none opacity-50" // ❌ Disabled (already approved)
-                                    : "bg-[#FC0A0A] text-white font-bold cursor-pointer" // Active
+                                    : "bg-[#FC0A0A] text-white font-bold cursor-pointer cursor-not-allowed" // Active
                             }`}
                     >
                         {rejectedCodes.includes(3) ? "REJECTED" : "REJECT"}
@@ -654,7 +649,7 @@ export default function UnverifiedPopup({ user = {}, onClose, image }) {
                                 ? "bg-[#FC0A0A] text-white font-bold opacity-50 cursor-not-allowed pointer-events-none" // ✅ Rejected (disabled)
                                 : approvedCodes.includes(4)
                                     ? "bg-gray-500 text-white cursor-not-allowed pointer-events-none opacity-50" // ❌ Disabled (already approved)
-                                    : "bg- bg-[#000000] text-white font-bold cursor-pointer" // Active
+                                    : "bg-[#000000] text-white font-bold cursor-not-allowed pointer-events-none " // Active
                             }`}
                     >
                         {rejectedCodes.includes(4) ? "REJECTED" : "Payment REJECTED"}

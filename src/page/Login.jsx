@@ -45,7 +45,7 @@ export default function LoginPage() {
       
       localStorage.setItem("sessionActive", "true");
       alert("Login Successful!");
-      navigate("/home", { replace: true });
+      navigate("/dashboard", { replace: true });
     } else {
       setError("Invalid username or password");
     }

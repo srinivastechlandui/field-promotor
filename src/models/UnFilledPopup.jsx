@@ -38,6 +38,21 @@ export default function UnFilledPopup ({user = {}, onClose}) {
       }
     }
   };
+  const dateObj = new Date(user.joinedDate);
+  console.log("date obj",dateObj);
+   const day = dateObj.getDate().toString().padStart(2, '0');
+  const month = (dateObj.getMonth() + 1).toString().padStart(2, '0'); 
+  const year = dateObj.getFullYear();
+  const formattedDate = `${day}/${month}/${year}`;
+
+  // Format the time part.
+  const time = dateObj.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false 
+  });
+
   return (
     <div className="fixed inset-0 flex flex-col items-center w-full top-0 bottom-0 overflow-y-auto bg-black bg-opacity-50 animate-[slideDown_0.3s_ease-in-out] origin-top"       style={{
         maxWidth: '940px',
@@ -168,8 +183,10 @@ export default function UnFilledPopup ({user = {}, onClose}) {
                     </div>
                 </div>
                 <div className="flex flex-col items-center justify-center text-3xl text-[#0000FF] font-extrabold">
-                    <span>Date(12/01/2025)</span>
-                    <span>Time[21:33:17]</span>
+                    {/* <span>Date(12/01/2025)</span>
+                    <span>Time[21:33:17]</span> */}
+                    <span>Date({formattedDate})</span>
+                     <span>Time[{time}]</span>
                 </div>
             </div>
              {/*Card 3*/}
@@ -238,7 +255,8 @@ export default function UnFilledPopup ({user = {}, onClose}) {
                                                     <img src={activeimg} alt="" />
                                                 )}
                                                 {/* Optionally show camera icon or upload button if needed */}
-                                                <div className="w-[128px] h-[24px] flex items-center justify-center bg-[#78FF47] text-white rounded-lg mt-10">
+                                                <div className="w-[128px] h-[24px] flex items-center justify-center text-center text-white bg-[#78FF47]  rounded-lg mt-10">
+                                                  <h1>Pending</h1>  
                                                 </div> 
                                         </div>
                                 </div>
@@ -340,8 +358,8 @@ export default function UnFilledPopup ({user = {}, onClose}) {
                                 By signing up you agree to our <a href="#" className="text-[#F61616]">Terms & Conditions</a> and Company Privacy Policy
                             </label>
                             </div>
-                        <button className="w-[136px] h-[26px] bg-[#78FF47] rounded-lg border-2 border-white">
-
+                        <button className="w-[136px] h-[26px] items-center justify-center text-white bg-[#78FF47] rounded-lg border-2 border-white">
+                            Pending
                         </button>
                     </div>
                 </div>
@@ -413,8 +431,8 @@ export default function UnFilledPopup ({user = {}, onClose}) {
                                                         <p className="text-red-500 text-[6px] font-bold text-center max-w-full mt-2">
                                                                 The details on the document should be clearly visible while uploading the picture
                                                         </p>
-                                                        <div className="w-[128px] h-[24px] flex items-center justify-center bg-[#78FF47] border-2 border-white rounded-lg mt-2">
-                                
+                                                        <div className="w-[128px] h-[24px] flex  text-white   items-center justify-center  bg-[#78FF47] border-2 border-white rounded-lg mt-2">
+                                                         Pending
                                                         </div>
                                                 </div>
                                 </div>
@@ -433,8 +451,9 @@ export default function UnFilledPopup ({user = {}, onClose}) {
                         <span className="font-bold text-3xl">PAID</span>
                     </div>
                 </div>
-                <div className="w-48 h-[75px] bg-[#F90D0D] mt-10 border-2 border-gray-100"
+                <div className="w-48 h-[75px] bg-[#F90D0D] mt-10 border-2 border-gray-100 items-center justify-center text-center text-white"
                   style={{borderRadius:"50%"}}>
+                    <h1 className="m-6">Pending</h1>  
                 </div>
             </div>
         </div>

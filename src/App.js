@@ -21,7 +21,7 @@ function App() {
           <Route path="/details-fillup" element={<DetailsPage />} />
           <Route path="/upload-documents" element={<UploadDocumentPage />} /> */}
         <Route path="/" element={<LoginPage />} />
-        <Route path="/home" element={<Header />} /> {/* Header page */}
+        <Route path="/dashboard" element={<Header />} /> {/* Header page */}
 
           <Route path="/privacy" element={<TermsAndConditions />} />
           {/* Add other routes as needed */}

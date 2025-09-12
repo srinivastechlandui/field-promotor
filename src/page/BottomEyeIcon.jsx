@@ -11,11 +11,11 @@ export default function BottomEyeIcon({ onClose}){
   const [showConfirm, setShowConfirm] = useState(false);
   const [showEyeIconBigPopup , setShowEyeIconBigPopup] = useState(false);
   
-  // const handleCloseAll = () => {
-  //   setShowKeypad(false);
-  //   setShowConfirm(false);
-  //   onClose?.();
-  // };
+  const handleCloseAll = () => {
+    setShowKeypad(false);
+    setShowConfirm(false);
+    onClose?.();
+  };
   return (
     <>
     {showEyeIconBigPopup && (

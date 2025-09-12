@@ -5,6 +5,7 @@ import ActivatePopup from "../models/ActivatePopup";
 import UnFilledPopup from "../models/UnFilledPopup";
 import UnVerifiedPopup from "../models/UnverifiedPopup";
 import ProcessingPopup from "../models/ProcessingPopup";
+import  FilterBar from "./FilterBar";
 import BASE_URL from "../utils/Urls"
 const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -13,10 +14,36 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
   const [isUnVerifiedPopupOpen, setIsUnVerifiedPopupOpen] = useState(false);
   const [isProcessingPopupOpen, setIsProcessingPopupOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [tableData, setTableData] = useState([]);
+  const [ticketCounts, setTicketCounts] = useState({});
   const [openGroup, setOpenGroup] = useState(null);
+  const [tableData, setTableData] = useState([]);
+    
+  // --- NEW: UI filter states
+  const [selectedOption, setSelectedOption] = useState(filterOption || "All"); // group filter from FilterBar
+  const [userIdFiltersState, setUserIdFilters] = useState(userIdFilters || {}); // advanced filters from UserIdPopup
+
 
   useEffect(() => {
+    // if parent passes updated filterOption prop, keep local selectedOption in sync
+    if (filterOption) setSelectedOption(filterOption);
+  }, [filterOption]);
+ const fetchTicketCount = async (user_id) => {
+  try {
+    const res = await axios.get(`${BASE_URL}/tickets/${user_id}`);
+    setTicketCounts((prev) => ({
+      ...prev,
+      [user_id]: res.data.data.length || 0,
+    }));
+  } catch (err) {
+    console.error(`Error fetching tickets for ${user_id}:`, err);
+    setTicketCounts((prev) => ({
+      ...prev,
+      [user_id]: 0,
+    }));
+  }
+};
+
+  const reloadTableData = () => {
     axios
       .get(`${BASE_URL}/users/`)
       .then((res) => {
@@ -26,10 +53,11 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
             user_id: user.user_id,
             email: user.email || "",
             phone_number: user.phone_number,
-            status: formatStatus(user.status),
+            status: formatStatus(user.status, user),
             status_code: user.status_code,
             employer_name: user.employer_name,
-            joinedDate: formatDate(user.created_at),
+            joinedDate: user.created_at,
+            updated_at: user.updated_at,
             bankedEarnings: "$0",
             paidEarnings: "$0",
             livePayoutBills: "$0",
@@ -37,8 +65,9 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
             accountsCreated: 0,
             unrootedAccounts: 0,
             paymentDue: "$0",
-            tickets: 1,
+            tickets: 0,
             group: user.group || "Group",
+            purpose: user.purpose || "Part-Time",
             aadhar_no: user.aadhar_no || "",
             aadhar_front_img: user.aadhar_front_img || "",
             aadhar_back_img: user.aadhar_back_img || "",
@@ -52,12 +81,22 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
             transaction_img: user.transaction_img || "",
             approved: user.approved,
             rejected: user.rejected,
+            coupon_code:user.coupon_code,
+            valid_date:formatDate(user.valid_date),
+            expired_date:formatDate(user.expired_date),
+            redeemed: user.redeem,
           }));
           setTableData(formattedUsers);
-          // console.log("data",formattedUsers)
+          res.data.users.forEach((u) => fetchTicketCount(u.user_id));
+          console.log("Formatted Users:", formattedUsers);
         }
       })
       .catch((err) => console.error("API Error:", err));
+  };
+
+  // Initial load and reload on demand
+  useEffect(() => {
+    reloadTableData();
   }, []);
 
   // ✅ Format date function
@@ -83,8 +122,9 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
   };
 
 
-  // ✅ Existing code for row border
+  
   const rowBorderColors = ["#3B82F6", "#10B981", "#8B5CF6", "#F97316", "#EC4899", "#6366F1"];
+
   const getRowBorderStyle = (index) => {
     const color = rowBorderColors[index % rowBorderColors.length];
     return {
@@ -92,8 +132,7 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
       borderBottom: `2px solid ${color}`
     };
   };
-  // console.log("data-----",user.status, user.status_code)
-  // ✅ Profile click logic remains same
+
   const handleProfileClick = (user) => {
 
     if (user.status_code === 0 || user.status_code === 1) {
@@ -131,8 +170,12 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
     }, {});
   };
 
-  // ✅ Filtering by search text, filterOption, and userIdFilters
+  // -----------------------------
+  // Filtering logic (search remains untouched)
+  // -----------------------------
   let filteredData = tableData;
+
+  // keep the existing search behavior exactly as before
   if (searchText !== undefined && searchText.trim() !== "") {
     const search = searchText.trim().toLowerCase();
     filteredData = filteredData.filter((row) => (
@@ -144,24 +187,92 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
       row.phone_number.includes(search)
     ));
   }
-  if (filterOption && filterOption !== "All") {
-    filteredData = filteredData.filter((row) => row.group === filterOption);
+
+  // Group filter: prefer external prop `filterOption` if provided, otherwise the UI-selected `selectedOption`
+  const activeGroupFilter = filterOption || selectedOption;
+  if (activeGroupFilter && activeGroupFilter !== "All") {
+    filteredData = filteredData.filter((row) => row.group === activeGroupFilter);
   }
-  // Apply userIdFilters if any are true
-  const filterKeys = Object.keys(userIdFilters).filter(k => userIdFilters[k]);
-  if (filterKeys.length > 0) {
-    filteredData = filteredData.filter(row => {
-      // Example: adjust logic to match your data structure and filter meaning
-      // Here, we just check if the row has a truthy property for each filter
-      return filterKeys.every(key => row[key]);
-    });
+
+  // -----------------------------
+  // Apply advanced filters coming from UserIdPopup (userIdFiltersState)
+  // Expected shape (example):
+  // {
+  //   statuses: ['ACTIVE','UNFILLED'],
+  //   joinedSort: 'new'|'old'|null,
+  //   ticketSort: 'high'|'low'|null,
+  //   bankEarned: boolean,
+  //   paidEarnings: boolean,
+  //   pendingPayput: boolean,
+  //   accountsCreated: boolean,
+  //   unRotedAccount: boolean,
+  //   paymentDue: boolean,
+  //   tickets: boolean
+  // }
+  // -----------------------------
+  const filters = userIdFiltersState || {};
+
+  // helper to parse money strings like "$1,234" => 1234
+  const parseAmount = (val) => {
+    if (!val && val !== 0) return 0;
+    if (typeof val === "number") return val;
+    if (typeof val === "string") {
+      const n = Number(val.replace(/[^0-9.-]+/g, ""));
+      return isNaN(n) ? 0 : n;
+    }
+    return 0;
+  };
+
+  // status filter
+  if (filters.statuses && Array.isArray(filters.statuses) && filters.statuses.length > 0) {
+    filteredData = filteredData.filter(row => filters.statuses.includes(row.status));
+  }
+
+  // numeric/boolean filters
+  if (filters.bankEarned) {
+    filteredData = filteredData.filter(row => parseAmount(row.bankedEarnings) > 0);
+  }
+  if (filters.paidEarnings) {
+    filteredData = filteredData.filter(row => parseAmount(row.paidEarnings) > 0);
+  }
+  if (filters.pendingPayput) {
+    filteredData = filteredData.filter(row => parseAmount(row.paymentDue) > 0);
+  }
+  if (filters.accountsCreated) {
+    filteredData = filteredData.filter(row => (row.accountsCreated || 0) > 0);
+  }
+  if (filters.unRotedAccount) {
+    filteredData = filteredData.filter(row => (row.unrootedAccounts || 0) > 0);
+  }
+  if (filters.tickets) {
+    filteredData = filteredData.filter(row => (ticketCounts[row.user_id] || 0) > 0);
+  }
+
+  // Sorting: joined date
+  if (filters.joinedSort === "new") {
+    filteredData = filteredData.slice().sort((a, b) => new Date(b.joinedDate) - new Date(a.joinedDate));
+  } else if (filters.joinedSort === "old") {
+    filteredData = filteredData.slice().sort((a, b) => new Date(a.joinedDate) - new Date(b.joinedDate));
+  }
+
+  // Sorting: tickets (use ticketCounts)
+  if (filters.ticketSort === "high") {
+    filteredData = filteredData.slice().sort((a, b) => (ticketCounts[b.user_id] || 0) - (ticketCounts[a.user_id] || 0));
+  } else if (filters.ticketSort === "low") {
+    filteredData = filteredData.slice().sort((a, b) => (ticketCounts[a.user_id] || 0) - (ticketCounts[b.user_id] || 0));
   }
 
   const toggleGroup = (groupName) => {
     setOpenGroup((prev) => (prev === groupName ? null : groupName));
   };
+
   return (
     <>
+       <FilterBar
+        selectedOption={selectedOption}
+        setSelectedOption={setSelectedOption}
+        setUserIdFilters={setUserIdFilters}
+      />
       {Object.entries(groupBy(filteredData, "group")).map(([groupName, users]) => (
         <div key={groupName} className="mt-2 mb-6 border border-gray-300 rounded-lg shadow">
           <div
@@ -243,6 +354,9 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
                               alt={`${row.employer_name}'s profile`}
                               onClick={() => handleProfileClick(row)}
                             />
+                            <div className="text-xs text-gray-500 mt-1">
+                              {row.purpose}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900">
@@ -297,7 +411,7 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
                               </svg>
                             </div>
                             <div className="text-sm text-gray-900">{row.phone_number}</div>
-                            <div className="text-sm text-[#3021D7]">{row.joinedDate}</div>
+                            <div className="text-sm text-[#3021D7]">{formatDate(row.joinedDate)}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-3xl">
@@ -377,14 +491,9 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
                             }}
                           >
                             <div className="text-lg font-extrabold text-[#0D0099]">
-                              {row.tickets}
+                              {ticketCounts[row.user_id] ?? 0}
                             </div>
                           </td>
-                          {/* <td className="px-6 py-4 whitespace-nowrap text-center">
-                            <div className="text-[#E19034] text-1xl font-bold">
-                              {row.group ? row.group.charAt(0).toUpperCase() + row.group.slice(1) : ''}
-                            </div>
-                          </td> */}
                         </tr>
                       ))
                     ) : (
@@ -394,9 +503,8 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
                     )}
                   </tbody>
                 </table>
-              </div>
               <div className='mx-2 w-full h-[132px] bg-blue-200 flex flex-col items-center justify-center
-                           border-2 border-red-500 mt-4 shadow-lg relative rounded-lg'>
+                           border-2 border-red-500 mt-4 shadow-lg  rounded-lg'>
                 <div className='flex items-center justify-between w-full px-4 text-[#29A80C] font-bold'>
                   <p>NO OF LAST PAID EARNINGS ACCOUNTS</p>
                   <span>$$$$$$$$$$</span>
@@ -410,19 +518,23 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
                   <span>$$$$$$$$$$</span>
                 </div>
               </div>
+              </div>
               {/* Ticket popup */}
               {isModalOpen && selectedUser && (
                 <RaiseTickets
                   user_id={selectedUser.user_id}
-                  // ticketId={selectedUser.ticketId || 10} // use dynamic ticketId if exists
                   onClose={() => setIsModalOpen(false)}
+                  reloadTableData={reloadTableData}
                 />
               )}
               {isActivatePopupOpen && selectedUser && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                   <ActivatePopup
                     user={selectedUser || 7}
-                    onClose={() => setIsActivatePopupOpen(false)}
+                    onClose={() => {
+                      setIsActivatePopupOpen(false);
+                      reloadTableData();
+                    }}
                   />
                 </div>
               )}
@@ -430,7 +542,10 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                   <UnFilledPopup
                     user={selectedUser}
-                    onClose={() => setIsUnFilledPopupOpen(false)}
+                    onClose={() => {
+                      setIsUnFilledPopupOpen(false);
+                      reloadTableData();
+                    }}
                   />
                 </div>
               )}
@@ -438,7 +553,10 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                   <UnVerifiedPopup
                     user={selectedUser}
-                    onClose={() => setIsUnVerifiedPopupOpen(false)}
+                    onClose={() => {
+                      setIsUnVerifiedPopupOpen(false);
+                      reloadTableData();
+                    }}
                   />
                 </div>
               )}
@@ -446,7 +564,10 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                   <ProcessingPopup
                     user={selectedUser}
-                    onClose={() => setIsProcessingPopupOpen(false)}
+                    onClose={() => {
+                      setIsProcessingPopupOpen(false);
+                      reloadTableData();
+                    }}
                   />
                 </div>
               )}
@@ -454,8 +575,8 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
           )}
         </div>
       ))}
-      {/* <div className='mx-2 w-full h-[132px] bg-blue-200 flex flex-col items-center justify-center
-                           border-2 border-red-500 mt-4 shadow-lg relative rounded-lg'>
+      <div className='mx-2 w-full h-[132px] bg-blue-200 flex flex-col items-center justify-center
+                           border-2 border-red-500 mt-4 shadow-lg rounded-lg'>
         <div className='flex items-center justify-between w-full px-4 text-[#29A80C] font-bold'>
           <p>NO OF LAST PAID EARNINGS ACCOUNTS</p>
           <span>$$$$$$$$$$</span>
@@ -468,7 +589,7 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
           <p>NO OF BANKED EARNINGS ACCOUNTS</p>
           <span>$$$$$$$$$$</span>
         </div>
-      </div> */}
+      </div>
     </>
   );
 };

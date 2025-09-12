@@ -12,84 +12,103 @@ import selfi from '../Assets/selfi.png';
 import { FaCamera } from "react-icons/fa6";
 import BASE_URL from '../utils/Urls';
 
-export default function ProcessingPopup({onClose, user = {}})  {
-    console.log("user", user);
+
+export default function ProcessingPopup({ onClose, user = {} }) {
+    // const BASE_URL = "http://localhost:8080/api/v1"
     const [currentPage, setCurrentPage] = useState("main");
     const [activeStep, setActiveStep] = useState(null);
-    const [isClose,setIsClose]=useState(true)
-      const steps = [
-    { label: "User iD Access", status: "complete" },
-    { label: "Profile photo upload", status: "complete" },
-    { label: "Details fillup", status: "in-progress" },
-    { label: "Documents upload", status: "in-progress" },
-    { label: "Onboarding/baground verification fee", status: "pending" },
-  ];
-  const [couponCode, setCouponCode] = useState("");
-  const [couponData, setCouponData] = useState(null);
-
-  // ✅ Fetch coupon on mount
-  useEffect(() => {
-    if (!user?.user_id) return;
+    const [isClose, setIsClose] = useState(true);
+    const steps = [
+        { label: "User iD Access", status: "complete" },
+        { label: "Profile photo upload", status: "complete" },
+        { label: "Details fillup", status: "in-progress" },
+        { label: "Documents upload", status: "in-progress" },
+        { label: "Onboarding/baground verification fee", status: "pending" },
+    ];
+    const [couponCode, setCouponCode] = useState("");
+    const [couponData, setCouponData] = useState(null);
 
     const fetchCoupon = async () => {
-      try {
-        const response = await axios.get(
-          `${BASE_URL}/admin/coupon/${user.user_id}`
-        //   `http://localhost:8080/api/v1/admin/coupon/${user.user_id}`
-        );
-
-        if (response.data?.result?.length > 0) {
-          setCouponData(response.data.result[0]);
+        if (!user?.user_id) return;
+        try {
+            const response = await axios.get(
+                `${BASE_URL}/admin/coupon/${user.user_id}`
+            );
+            if (response.data?.result?.coupon_code) {
+                setCouponData(response.data.result);
+            } else {
+                setCouponData(null);
+            }
+        } catch (err) {
+            setCouponData(null);
+            console.error("❌ Failed to fetch coupon:", err.message);
         }
-      } catch (err) {
-        console.error("❌ Failed to fetch coupon:", err.message);
-      }
     };
 
-    fetchCoupon();
-  }, [user?.user_id]);
-//   const fetchCoupon = async () => {
-//       try {
-//         const response = await axios.get(
-//           `${BASE_URL}/admin/coupon/${user.user_id}`
-//         //   `http://localhost:8080/api/v1/admin/coupon/${user.user_id}`
-//         );
-
-//         if (response.data?.result?.length > 0) {
-//           setCouponData(response.data.result[0]);
-//         }
-//       } catch (err) {
-//         console.error("❌ Failed to fetch coupon:", err.message);
-//       }
-//     };
+    useEffect(() => {
+        fetchCoupon();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.user_id]);
 
    
-  // Format date & time
+
+const formatDate = (isoString) => {
+  if (!isoString) return "";
+  const dateObj = new Date(isoString);
+
+  const day = String(dateObj.getDate()).padStart(2, "0");
+  const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const year = dateObj.getFullYear();
+
+  return `${day}-${month}-${year}`;
+};
+
+const formatTime = (isoString) => {
+  if (!isoString) return "";
+  const dateObj = new Date(isoString);
+
+  const hours = String(dateObj.getHours()).padStart(2, "0");
+  const minutes = String(dateObj.getMinutes()).padStart(2, "0");
+  const seconds = String(dateObj.getSeconds()).padStart(2, "0");
+
+  return `${hours}:${minutes}:${seconds}`;
+};
+
+const getDayDifference = (startDate, endDate) => {
+  if (!startDate || !endDate) return 0;
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  const diffTime = end - start; // milliseconds
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  return diffDays;
+};
+
+
+// Format date & time -> day-month-year hr:min:sec
 const formatDateTime = (isoString) => {
   if (!isoString) return "";
   const dateObj = new Date(isoString);
-  const date = dateObj.toLocaleDateString();
-  const time = dateObj.toLocaleTimeString();
-  return `${date} - ${time}`;
+
+  const day = String(dateObj.getDate()).padStart(2, "0");
+  const month = String(dateObj.getMonth() + 1).padStart(2, "0"); // months are 0-based
+  const year = dateObj.getFullYear();
+
+  const hours = String(dateObj.getHours()).padStart(2, "0");
+  const minutes = String(dateObj.getMinutes()).padStart(2, "0");
+  const seconds = String(dateObj.getSeconds()).padStart(2, "0");
+
+  return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
 };
 
-// Calculate expiry = created_at + 10 days
-const getExpiryDate = (isoString) => {
-  if (!isoString) return "";
-  const dateObj = new Date(isoString);
-  dateObj.setDate(dateObj.getDate() + 10); // add 10 days
-  const date = dateObj.toLocaleDateString();
-  const time = dateObj.toLocaleTimeString();
-  return `${date} - ${time}`;
-};
 
-   const handleCouponSubmit = async () => {
+    const handleCouponSubmit = async () => {
         if (!couponCode.trim()) {
             alert("⚠️ Please enter a coupon code");
             return;
         }
 
-        // ✅ Validation: only a-e (case insensitive) and numbers 0-9
         const validPattern = /^[a-eA-E0-9]+$/;
         if (!validPattern.test(couponCode)) {
             alert("⚠️ Coupon code must contain only letters (a-e) and numbers (0-9)");
@@ -98,22 +117,23 @@ const getExpiryDate = (isoString) => {
 
         try {
             const response = await axios.post(
-            `${BASE_URL}/admin/coupon/${user.user_id}`,
-            { coupon_code: couponCode }
+                `${BASE_URL}/admin/coupon/${user.user_id}`,
+                // `http://localhost:8080/api/v1/admin/coupon/${user.user_id}`,
+                { coupon_code: couponCode }
             );
 
-            alert(`✅ ${response.data.message}`);
-            setCouponCode(""); // clear input after success
+            alert(`${response.data.message}`);
+            setCouponCode("");
+            // Fetch the latest coupon after successful submission
+            await fetchCoupon();
         } catch (err) {
             if (err.response) {
-            // Backend responded with an error
-            alert(`❌ ${err.response.data.message}`);
+                alert(`❌ ${err.response.data.message}`);
             } else {
-            // Network or unexpected error
-            alert("❌ Error submitting coupon: " + err.message);
+                alert("❌ Error submitting coupon: " + err.message);
             }
         }
-   };
+    };
   const handleStepClick = (stepIndex) => {
     setActiveStep(stepIndex);
       if (stepIndex === 0) {
@@ -291,8 +311,9 @@ const getExpiryDate = (isoString) => {
                             </div>
                         </div>
                         <div className="flex flex-col items-center justify-center text-[10px] text-[#0000FF] font-extrabold">
-                            <span>Date(12/01/2025)</span>
-                            <span>Time[21:33:17]</span>
+                            {/* <span>Date(12/01/2025)</span> */}
+                            <span>Date: {user.joinedDate}</span>
+                            {/* <span>Time[21:33:17]</span> */}
                         </div>
                     </div>
                      {/*Card 3*/}
@@ -560,16 +581,16 @@ const getExpiryDate = (isoString) => {
                     active:translate-y-1 active:translate-x-1 my-10">
                     <span className="flex items-center justify-center text-[62px] font-bold">view details</span>
                 </div>
-                <div className=" w-60 h-10 text-3xl flex flex-col items-center justify-center text-white font-bold mb-10">
-                    <span>Date(12/01/2025)</span>
-                    <span>Time[21:32:17]</span>
+                <div className=" w-60 h-10 text-2xl flex flex-col items-center justify-center text-white font-bold mb-10">
+                   <span>Date({formatDate(user.joinedDate)})</span>
+                   <span>Time[{formatTime(user.joinedDate)}]</span>
                 </div>
                 <div className="w-52 h-14 bg-[#D9D9D9] text-black font-extrabold text-5xl
                   flex items-center justify-center rounded-lg mb-10 ">
                     DAYS
                 </div>
                 <div className="w-32 h-32 rounded-full border-2 border-black bg-white">
-                 <div className="flex items-center justify-center font-bold text-3xl mt-10">8</div>                     
+                 <div className="flex items-center justify-center font-bold text-3xl mt-10">{getDayDifference(user.joinedDate, user.updated_at)}</div>                     
                 </div>
             </div>
         </div>
@@ -582,12 +603,23 @@ const getExpiryDate = (isoString) => {
                          placeholder="Enter Coupon Code"
                          className="w-60 h-10 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-black"
                     />
-                    <button onClick={handleCouponSubmit}
+                    {/* <button onClick={handleCouponSubmit}
                         className="px-5 h-10 rounded-lg bg-green-600 text-white font-bold hover:bg-green-700 transition"
                     >
                         Submit
-                    </button>
-            </div>
+                    </button> */}
+                    <button
+                        onClick={handleCouponSubmit}
+                        disabled={!!couponData} // disable if coupon already exists
+                        className={`px-5 h-10 rounded-lg font-bold transition 
+                            ${couponData 
+                            ? "bg-gray-400 text-gray-200 cursor-not-allowed" 
+                            : "bg-green-600 text-white hover:bg-green-700"
+                            }`}
+                        >
+                        {couponData ? "Coupon Created" : "Submit"}
+                        </button>
+              </div>
             {/* Progress Bar Background */}
             <div className="h-[59px] bg-green-600 rounded-full relative border-4 border-white">
                 {/* Golf Ball */}
@@ -618,18 +650,30 @@ const getExpiryDate = (isoString) => {
                 Coupon: <span className="text-yellow-300">{couponData.coupon_code}</span>
                 </p>
                 <p className="text-white text-md">
-                Created At: {formatDateTime(couponData.created_at)}
+                Created At: {formatDateTime(couponData.valid_date)}
+                {/* Created At: {couponData.valid_date} */}
                 </p>
                 <p className="text-green-300 text-md font-semibold">
-                Coupon valid up to: {getExpiryDate(couponData.created_at)}
+                Coupon valid up to: {formatDateTime(couponData.expired_date)}
+                {/* Coupon valid up to: {couponData.expired_date} */}
                 </p>
             </div>
             )}
 
 
         <button 
-         onClick={handleStartDuty}
-        className="w-[400px] h-[200px] rounded-full border-2 border-yellow-500 bg-gradient-to-b from-green-500 to-green-700 shadow-md hover:from-green-400 hover:to-green-600 transition-all">
+           onClick={() => {
+                if (!couponData) {
+                alert("⚠️ Please generate a coupon first!");
+                return;
+                }
+                handleStartDuty();
+            }}
+            // disabled={!couponData}
+            className={`w-[400px] h-[200px] rounded-full border-2 
+                    ${couponData ? "border-yellow-500 bg-gradient-to-b from-green-500 to-green-700 hover:from-green-400 hover:to-green-600" : "bg-gray-400 cursor-not-allowed"} 
+                      shadow-md transition-all`}
+            >
             <span className="text-6xl text-white font-bold">START DUTY</span>
         </button>
 
@@ -648,20 +692,14 @@ const StepItem = ({ label, status, isLast }) => {
   return (
     <div className="relative flex items-center w-[48px] h-[7px] space-y-1">
       {/* Status Icon */}
-      {/* <div className="absolute left-[-5px] w-[4px] h-[4px] border border-white">
-        {icon}
-       </div> */}
+     
         <div className="absolute left-1 mt-1 z-20 bg-black rounded-full w-[4px] h-[4px] flex items-center justify-center border border-white">
         {icon}
       </div>
 
-      {/* Step Label Box — THIS IS THE PART TO UPDATE */}
       <div className="relative flex items-center border border-white rounded-[2px] w-[48px] h-[6px]
          bg-white/10 backdrop-blur-md px-[2px]">
-        {/* <span className={`text-white font-semibold ${isLast ? 'text-[6px]' : 'text-[8px] mr-2'}`}>
-          {label}
-        </span>
-        <span className="text-white w-3 h-3 flex items-center absolute right-1">{">"}</span> */}
+        
       </div>
     </div>
   );
