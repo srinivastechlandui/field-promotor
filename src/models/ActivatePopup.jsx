@@ -218,8 +218,7 @@ const ActivatePopup = ({ user, onClose, image }) => {
                 setLoading(true);
                 setError("");
                 setSuccess("");
-                const BASE_URL1 = "http://localhost:8080/api/v1"
-                const res = await axios.delete(`${BASE_URL1}/users/admin/${user.user_id}`);
+                const res = await axios.delete(`${BASE_URL}/users/admin/${user.user_id}`);
                 if (res.data?.message) {
                     setSuccess(res.data.message);
                 } else {
