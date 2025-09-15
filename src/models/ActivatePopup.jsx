@@ -41,7 +41,8 @@ const ActivatePopup = ({ user, onClose, image }) => {
     const [couponCode, setCouponCode] = useState(user?.coupon_code || "");
     const [showModal, setShowModal] = useState(false);
     const [notifications, setNotifications] = useState([]);
-  const [filter, setFilter] = useState("all"); 
+    const [filter, setFilter] = useState("all"); 
+    const [deactivated, setDeactivated] = useState(false);
 
   useEffect(() => {
   if (!user.user_id) return;
@@ -200,6 +201,40 @@ const ActivatePopup = ({ user, onClose, image }) => {
             setLoading(false);
         }
     };
+
+    
+      useEffect(() => {
+        if (user?.status_code === -1) {
+            setDeactivated(true);
+            setSuccess("✅ User is already deactivated");
+        }
+    }, [user]);             
+
+        // Deactivate user handler (dynamic endpoint)
+        const handleDeactivate = async () => {
+            if (!window.confirm("Are you sure you want to deactivate this account?")) return;
+
+            try {
+                setLoading(true);
+                setError("");
+                setSuccess("");
+                const BASE_URL1 = "http://localhost:8080/api/v1"
+                const res = await axios.delete(`${BASE_URL1}/users/admin/${user.user_id}`);
+                if (res.data?.message) {
+                    setSuccess(res.data.message);
+                } else {
+                    setSuccess("✅ User deactivated successfully");
+                }
+                setDeactivated(true);
+            } catch (err) {
+                setError(
+                    err.response?.data?.message ||
+                    "❌ Failed to deactivate user"
+                );
+            } finally {
+                setLoading(false);
+            }
+        };
 
     return (
         <div
@@ -648,29 +683,8 @@ const ActivatePopup = ({ user, onClose, image }) => {
                     </div>
                 </div>
 
-                {/* card3 */}
-                {/* <div
-                    className="w-[179px] h-[340px] bg-cover bg-center flex flex-col items-center px-4 py-2 rounded-lg"
-                    style={{ backgroundImage: `url(${blue})` }}>
-                    <div className="flex items-center gap-5 mb-2 shadow-[ rgb(107 114 128)]">
-                        <FaComments className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-[#3a1e0b] font-bold" />
-                        <h2 className="text-xs font-bold text-black">Notification </h2>
-                    </div>
-                    <div className="flex items-center justify-center gap-2 border-b-2 border-[#988686] w-[112px] mb-3">
-                        <span className="text-[#4D4D4D] text-[8px]">ALL</span>
-                        <span className="text-[#988686] text-[8px]">UN READ</span>
-                        <span className="text-[#988686] text-[8px]">READ</span>
-                    </div>
-                    <div className="flex flex-col w-[139px] h-[1.5px] space-y-6">
-                        {[...Array(10)].map((_, i) => (
-                            <div
-                                key={i}
-                                className="border border-[#FFFFFF] rounded-sm"
-                            />
-                        ))}
-                    </div>
-                </div> */}
-
+                
+                        {/* card 3  */}
                      <div
                         className="w-[179px] h-[340px] bg-cover bg-center flex flex-col items-center px-4 py-2 rounded-lg"
                         style={{ backgroundImage: `url(${blue})` }}
@@ -802,20 +816,37 @@ const ActivatePopup = ({ user, onClose, image }) => {
                     </div>
                 </div>
             </div>
-            <div className="w-[611px] h-[64px] bg-[#FF0E12] rounded-lg flex items-center justify-center">
-                <span className="text-white text-bold flex items-center">DEACTIVATE ACCOUNT</span>
-            </div>
+           <div className="w-[611px] h-[70px] bg-[#FF0E12] rounded-lg flex items-center justify-center">
+            <button
+                onClick={handleDeactivate}
+                disabled={loading || deactivated}
+                className="disabled:opacity-50"
+                autoFocus
+            >
+                <span className="text-white font-bold flex items-center">
+                    {loading
+                        ? "Deactivating..."
+                        : deactivated
+                            ? "DEACTIVATED ACCOUNT"
+                            : "DEACTIVATE ACCOUNT"}
+                </span>
+            </button>
+        </div>
+            {(error || success) && (
+                <div
+                    className={`mt-4 text-center text-sm font-bold ${
+                        error ? "text-red-600" : "text-green-600"
+                    }`}
+                >
+                    {error || success}
+                </div>
+            )}
             <ImageModal
                 imageUrl={selectedImage}
                 isOpen={isModalOpen}
                 onClose={handleClose}
             />
-            {/* Feedback messages */}
-            {(error || success) && (
-                <div className={`mt-4 text-center text-sm font-bold ${error ? "text-red-600" : "text-green-600"}`}>
-                    {error || success}
-                </div>
-            )}
+           
         </div>
     );
 };
