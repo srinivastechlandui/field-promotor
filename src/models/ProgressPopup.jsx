@@ -4,11 +4,11 @@ import KeypadModal from "./KeypadModal";
 import ConfirmModal from "./ConfirmModal";
 
 const ProgressPopup = ({ onClose, user = {} }) => {
-  console.log("user", user);
+  // console.log("user", user);
   const [showMain, setShowMain] = useState(true);
   const [showKeypad, setShowKeypad] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-
+   const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "5094";
 
   return (
     <>
@@ -85,7 +85,7 @@ const ProgressPopup = ({ onClose, user = {} }) => {
       {/* Keypad Modal */}
     {showKeypad && (
         <KeypadModal
-          lockCode="5011" 
+          lockCode={PRIMARY_LOCK}
           onGoClick={() => {
             setShowKeypad(true);
             setShowConfirm(true);

@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import axios from "axios";
 import BASE_URL from "../utils/Urls";
-import KeypadModal from "./KeypadModal";   // ✅ Import KeypadModal
+import KeypadModal from "./KeypadModal";   
 
 export default function BankDetailsModal({ bank, onClose, onUpdated }) {
   const [accountNo, setAccountNo] = useState(bank.company_account_no || "");
   const [bankName, setBankName] = useState(bank.company_bank_name || "");
   const [loading, setLoading] = useState(false);
 
-  const [showKeypad, setShowKeypad] = useState(false); // ✅ for PIN step
-
+  const [showKeypad, setShowKeypad] = useState(false); 
+  const SECONDARY_LOCK = process.env.SECONDARY_LOCK || "2580"; 
   // Validations
   const validateInputs = () => {
     if (!accountNo.trim()) {
@@ -33,7 +33,7 @@ export default function BankDetailsModal({ bank, onClose, onUpdated }) {
 
   const handleUpdate = () => {
     if (!validateInputs()) return;
-    setShowKeypad(true);   // ✅ open keypad instead of direct update
+    setShowKeypad(true);   
   };
 
   const doUpdate = async () => {
@@ -110,7 +110,7 @@ export default function BankDetailsModal({ bank, onClose, onUpdated }) {
       {/* ✅ Keypad modal integration */}
       {showKeypad && (
         <KeypadModal
-          lockCode="2580"
+          lockCode={SECONDARY_LOCK}
           onGoClick={() => {
             setShowKeypad(false);
             doUpdate();  // only run update if PIN correct

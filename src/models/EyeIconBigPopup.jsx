@@ -13,7 +13,7 @@ export default function EyeIconBigPopup({ onClose }) {
   const [showMain, setShowMain] = useState(true);
   const [bankDetails, setBankDetails] = useState([]);
   const [selectedBank, setSelectedBank] = useState(null);
-
+   const SECONDARY_LOCK = process.env.SECONDARY_LOCK || "2580";
   // ✅ Fetch bank details on mount
   useEffect(() => {
     const fetchBankDetails = async () => {
@@ -200,7 +200,7 @@ export default function EyeIconBigPopup({ onClose }) {
       )}
       {showKeypad && (
         <KeypadModal
-          lockCode="2580"   
+          lockCode={SECONDARY_LOCK}  
           onGoClick={() => {
             setShowConfirm(true);
             setShowKeypad(false);

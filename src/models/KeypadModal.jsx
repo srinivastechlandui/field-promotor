@@ -81,8 +81,8 @@
 
 import React, { useState } from "react";
 import { FaPaperPlane } from "react-icons/fa";
-
-export default function KeypadModal({ lockCode = "5094", onGoClick, onClose }) {
+const PRIMARY_LOCK = process.env.PRIMARY_LOCK;
+export default function KeypadModal({ lockCode = PRIMARY_LOCK, onGoClick, onClose }) {
   const [input, setInput] = useState("");
 
   const handleKeyPress = (key) => {

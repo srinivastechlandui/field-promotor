@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { FaEllipsisV, FaSave, FaTimes } from "react-icons/fa";
 import axios from "axios";
 import RaiseTickets from "../models/RaiseTickets";
 import ActivatePopup from "../models/ActivatePopup";
@@ -16,6 +17,69 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [ticketCounts, setTicketCounts] = useState({});
   const [openGroup, setOpenGroup] = useState(null);
+  const [editingNameUserId, setEditingNameUserId] = useState(null);
+  const [editingPhoneUserId, setEditingPhoneUserId] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+
+  // Edit name handlers
+  const handleEditNameClick = (row) => {
+    setEditingNameUserId(row.user_id);
+    setEditName(row.employer_name);
+  };
+  const handleEditNameChange = (e) => setEditName(e.target.value);
+  const handleEditNameSave = async (user_id) => {
+    if (!editName.trim()) {
+      alert('Please enter a name.');
+      return;
+    }
+    setEditLoading(true);
+    try {
+      const res = await axios.put(`${BASE_URL}/users/admin/update/${user_id}`, { employer_name: editName });
+      alert(res.data.message || 'Name updated');
+      setEditingNameUserId(null);
+      setEditName("");
+      reloadTableData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update name');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+  const handleEditNameCancel = () => {
+    setEditingNameUserId(null);
+    setEditName("");
+  };
+
+  // Edit phone handlers
+  const handleEditPhoneClick = (row) => {
+    setEditingPhoneUserId(row.user_id);
+    setEditPhone(row.phone_number);
+  };
+  const handleEditPhoneChange = (e) => setEditPhone(e.target.value);
+  const handleEditPhoneSave = async (user_id) => {
+    if (!editPhone.trim()) {
+      alert('Please enter a phone number.');
+      return;
+    }
+    setEditLoading(true);
+    try {
+      const res = await axios.put(`${BASE_URL}/users/admin/update/${user_id}`, { phone_number: editPhone });
+      alert(res.data.message || 'Phone updated');
+      setEditingPhoneUserId(null);
+      setEditPhone("");
+      reloadTableData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update phone');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+  const handleEditPhoneCancel = () => {
+    setEditingPhoneUserId(null);
+    setEditPhone("");
+  };
   const [tableData, setTableData] = useState([]);
     
   // --- NEW: UI filter states
@@ -152,6 +216,11 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
       }
     }
     else if (user.status === "ACTIVE" && (user.status_code === 4 || user.status_code === 5 || user.status_code === 6) && user.approved.includes(6)) {
+      setSelectedUser(user);
+      console.log("setIsActivatePopupOpen--", user, user.status, user.status_code)
+      setIsActivatePopupOpen(true); // ✅ Open ActivatePopup
+    }
+    else if (user.status === "DEACTIVATED" && (user.status_code === -1) && user.approved.includes(6)) {
       setSelectedUser(user);
       console.log("setIsActivatePopupOpen--", user, user.status, user.status_code)
       setIsActivatePopupOpen(true); // ✅ Open ActivatePopup
@@ -380,9 +449,9 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
                               ) ? "TRAINING" : row.status}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-gray-900">
-                            <div className="text-3xl">
-                              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-900 relative">
+                            <div className="text-3xl flex items-center justify-between">
+                              {/* <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
                                 <defs>
                                   <linearGradient id="uniformGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                                     <stop offset="0%" stopColor="#D9D9D9" />
@@ -393,12 +462,74 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
                                 <circle cx="12" cy="12" r="3" fill="url(#uniformGradient)" />
                                 <circle cx="19" cy="12" r="3" fill="url(#uniformGradient)" />
                               </svg>
+                              <button
+                                className="ml-2 text-gray-500 hover:text-blue-600 focus:outline-none"
+                                onClick={() => handleEditNameClick(row)}
+                                title="Edit Employee Name"
+                                disabled={editingNameUserId !== null && editingNameUserId !== row.user_id}
+                              >
+                                <FaEllipsisV />
+                              </button> */}
+                              <button
+                                className="ml-2 text-gray-500 hover:text-blue-600 focus:outline-none"
+                                onClick={() => handleEditNameClick(row)}
+                                title="Edit Employee Name"
+                                disabled={editingNameUserId !== null && editingNameUserId !== row.user_id}
+                              >
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                                  <defs>
+                                    <linearGradient id="uniformGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                      <stop offset="0%" stopColor="#D9D9D9" />
+                                      <stop offset="100%" stopColor="#4203EF" />
+                                    </linearGradient>
+                                  </defs>
+                                  <circle cx="5" cy="12" r="3" fill="url(#uniformGradient)" />
+                                  <circle cx="12" cy="12" r="3" fill="url(#uniformGradient)" />
+                                  <circle cx="19" cy="12" r="3" fill="url(#uniformGradient)" />
+                                </svg>
+                              </button>
                             </div>
-                            <div className="text-sm text-gray-900">{row.employer_name}</div>
+                            {editingNameUserId === row.user_id ? (
+                              <div className="absolute z-10 bg-white border border-gray-300 rounded shadow-md p-2 mt-2 left-0 w-56">
+                                <label className="block text-xs text-gray-700 mb-1">Employee Name</label>
+                                <input
+                                  type="text"
+                                  value={editName}
+                                  onChange={handleEditNameChange}
+                                  className="w-full border rounded px-2 py-1 mb-2 text-sm"
+                                  disabled={editLoading}
+                                />
+                                <div className="flex gap-2 justify-end">
+                                  <button
+                                    className="px-2 py-1 bg-green-500 text-white rounded flex items-center text-xs"
+                                    onClick={() => handleEditNameSave(row.user_id)}
+                                    disabled={editLoading}
+                                  >
+                                    <FaSave className="mr-1" /> Save
+                                  </button>
+                                  <button
+                                    className="px-2 py-1 bg-gray-400 text-white rounded flex items-center text-xs"
+                                    onClick={handleEditNameCancel}
+                                    disabled={editLoading}
+                                  >
+                                    <FaTimes className="mr-1" /> Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-sm text-gray-900">{row.employer_name}</div>
+                            )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-3xl">
-                              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                          <td className="px-6 py-4 whitespace-nowrap relative">
+                            <div className="text-3xl flex items-center justify-between">
+                              
+                              <button
+                                className="ml-2 text-gray-500 hover:text-blue-600 focus:outline-none"
+                                onClick={() => handleEditPhoneClick(row)}
+                                title="Edit Phone Number"
+                                disabled={editingPhoneUserId !== null && editingPhoneUserId !== row.user_id}
+                              >
+                               <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
                                 <defs>
                                   <linearGradient id="uniformGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                                     <stop offset="0%" stopColor="#D9D9D9" />
@@ -409,8 +540,39 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
                                 <circle cx="12" cy="12" r="3" fill="url(#uniformGradient)" />
                                 <circle cx="19" cy="12" r="3" fill="url(#uniformGradient)" />
                               </svg>
+                              </button>
                             </div>
-                            <div className="text-sm text-gray-900">{row.phone_number}</div>
+                            {editingPhoneUserId === row.user_id ? (
+                              <div className="absolute z-10 bg-white border border-gray-300 rounded shadow-md p-2 mt-2 left-0 w-56">
+                                <label className="block text-xs text-gray-700 mb-1">Phone Number</label>
+                                <input
+                                  type="text"
+                                  value={editPhone}
+                                  onChange={handleEditPhoneChange}
+                                  className="w-full border rounded px-2 py-1 mb-2 text-sm"
+                                  disabled={editLoading}
+                                  maxLength={10}
+                                />
+                                <div className="flex gap-2 justify-end">
+                                  <button
+                                    className="px-2 py-1 bg-green-500 text-white rounded flex items-center text-xs"
+                                    onClick={() => handleEditPhoneSave(row.user_id)}
+                                    disabled={editLoading}
+                                  >
+                                    <FaSave className="mr-1" /> Save
+                                  </button>
+                                  <button
+                                    className="px-2 py-1 bg-gray-400 text-white rounded flex items-center text-xs"
+                                    onClick={handleEditPhoneCancel}
+                                    disabled={editLoading}
+                                  >
+                                    <FaTimes className="mr-1" /> Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-sm text-gray-900">{row.phone_number}</div>
+                            )}
                             <div className="text-sm text-[#3021D7]">{formatDate(row.joinedDate)}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">

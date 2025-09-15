@@ -14,7 +14,7 @@ export default function TermsAndConditions() {
 
   const [showKeypad, setShowKeypad] = useState(false);
   const [unlocked, setUnlocked] = useState(false); 
-
+  const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "5094";
   useEffect(() => {
     const fetchTerms = async () => {
       try {
@@ -137,7 +137,7 @@ export default function TermsAndConditions() {
 
       {showKeypad && (
         <KeypadModal
-          lockCode="5094"
+          lockCode={PRIMARY_LOCK}
           onGoClick={unlockEdit}
           onClose={() => setShowKeypad(false)}
         />

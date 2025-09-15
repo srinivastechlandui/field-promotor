@@ -20,6 +20,8 @@ const ActivatePopup = ({ user, onClose, image }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [editingNotificationId, setEditingNotificationId] = useState(null);
+    const [editingMessage, setEditingMessage] = useState("");
     const email = user?.email || "";
     const aadhar = user?.aadhar_no || "";
     const employerName = user?.name || user?.employer_name || "";
@@ -80,6 +82,44 @@ const ActivatePopup = ({ user, onClose, image }) => {
       console.error("❌ Failed to delete notification", err);
     }
   };
+
+    // Edit notification message
+    const handleEditNotification = (notification) => {
+        setEditingNotificationId(notification.notification_id);
+        setEditingMessage(notification.message);
+    };
+
+    const handleEditMessageChange = (e) => {
+        setEditingMessage(e.target.value);
+    };
+
+    const handleEditMessageSave = async (notification_id) => {
+        if (!editingMessage.trim()) {
+            alert("⚠️ Message cannot be empty");
+            return;
+        }
+        setLoading(true);
+        try {
+            const res = await axios.put(`${BASE_URL}/notifications/${notification_id}`, { message: editingMessage });
+            setNotifications((prev) =>
+                prev.map((n) =>
+                    n.notification_id === notification_id ? { ...n, message: editingMessage } : n
+                )
+            );
+            setEditingNotificationId(null);
+            setEditingMessage("");
+            alert(res.data.message || "Notification updated");
+        } catch (err) {
+            alert("❌ Failed to update notification");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleEditMessageCancel = () => {
+        setEditingNotificationId(null);
+        setEditingMessage("");
+    };
 
   const handleUpdateCoupon = async () => {
     if (!couponCode.trim()) {
@@ -672,31 +712,73 @@ const ActivatePopup = ({ user, onClose, image }) => {
                         {/* Notification List */}
                         <div className="flex flex-col w-[139px] flex-grow overflow-y-auto">
                             {loading ? (
-                            <p className="text-[10px] text-gray-500">Loading...</p>
+                                <p className="text-[10px] text-gray-500">Loading...</p>
                             ) : filtered.length === 0 ? (
-                            <p className="text-[10px] text-gray-500">No notifications</p>
+                                <p className="text-[10px] text-gray-500">No notifications</p>
                             ) : (
-                            filtered.map((n) => (
-                                <div
-                                    key={n.notification_id}
-                                    className={`flex items-start justify-between p-1 mb-2 rounded text-[9px] ${
-                                        n.is_read ? "bg-gray-200" : "bg-yellow-100"
-                                    }`}
+                                filtered.map((n) => (
+                                    <div
+                                        key={n.notification_id}
+                                        className={`flex items-start justify-between p-1 mb-2 rounded text-[9px] ${
+                                            n.is_read ? "bg-gray-200" : "bg-yellow-100"
+                                        }`}
                                     >
-                                    <div>
-                                        <p>{n.message}</p>
-                                        <span className="text-[7px] text-gray-500">
-                                        {new Date(n.created_at).toLocaleString()}
-                                        </span>
+                                        <div className="flex-1 mr-1">
+                                            {editingNotificationId === n.notification_id ? (
+                                                <>
+                                                    <input
+                                                        type="text"
+                                                        value={editingMessage}
+                                                        onChange={handleEditMessageChange}
+                                                        className="text-xs border rounded px-1 py-0.5 w-full mb-1"
+                                                        disabled={loading}
+                                                    />
+                                                    <div className="flex gap-1">
+                                                        <button
+                                                            onClick={() => handleEditMessageSave(n.notification_id)}
+                                                            className="text-green-600 text-[8px] border border-green-600 rounded px-1"
+                                                            disabled={loading}
+                                                        >
+                                                            Save
+                                                        </button>
+                                                        <button
+                                                            onClick={handleEditMessageCancel}
+                                                            className="text-gray-500 text-[8px] border border-gray-400 rounded px-1"
+                                                            disabled={loading}
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <p>{n.message}</p>
+                                                    <span className="text-[7px] text-gray-500">
+                                                        {new Date(n.created_at).toLocaleString()}
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col items-center gap-1 ml-1">
+                                            <button
+                                                onClick={() => handleEditNotification(n)}
+                                                className="text-blue-500 mb-1"
+                                                title="Edit notification"
+                                                disabled={editingNotificationId !== null && editingNotificationId !== n.notification_id}
+                                            >
+                                                <FaEdit size={10} />
+                                            </button>
+                                            <button
+                                                onClick={() => deleteNotification(n.notification_id)}
+                                                className="text-red-500"
+                                                title="Delete notification"
+                                                disabled={editingNotificationId === n.notification_id}
+                                            >
+                                                <FaTrash size={10} />
+                                            </button>
+                                        </div>
                                     </div>
-                                    <button
-                                        onClick={() => deleteNotification(n.notification_id)}
-                                        className="text-red-500 ml-2"
-                                    >
-                                        <FaTrash size={10} />
-                                    </button>
-                                    </div>
-                            ))
+                                ))
                             )}
                         </div>
                         </div>

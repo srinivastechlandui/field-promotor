@@ -12,7 +12,7 @@ export default function VideosPopup({ onClose }) {
   const [isEditing, setIsEditing] = useState(false);
   const [newVideoLink, setNewVideoLink] = useState("");
   const [enteredCode, setEnteredCode] = useState("");
-
+  const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "5094";
   // Fetch video link
   useEffect(() => {
     axios
@@ -146,7 +146,7 @@ export default function VideosPopup({ onClose }) {
       {/* Keypad Modal */}
       {showKeypad && (
         <KeypadModal
-           lockCode="5011" 
+           lockCode={PRIMARY_LOCK} 
            onGoClick={() => {
             setShowKeypad(false);
             setShowConfirm(true);
