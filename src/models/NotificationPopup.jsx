@@ -11,21 +11,22 @@ export default function NotificationPopup({ onClose }) {
   const [message, setMessage] = useState("");
   const [users, setUsers] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
-  const [loading, setLoading] = useState(false); // ✅ loader state
+  const [loading, setLoading] = useState(false);
 
+  const [searchTerm, setSearchTerm] = useState(""); // ✅ search bar state
   const emptyLines = 6;
 
   // ✅ Fetch users
   useEffect(() => {
     const fetchUsers = async () => {
-      setLoading(true); // start loader
+      setLoading(true);
       try {
         const { data } = await axios.get(`${BASE_URL}/users/`);
         if (data?.users) setUsers(data.users);
       } catch (err) {
         console.error("❌ Failed to fetch users", err);
       } finally {
-        setLoading(false); // stop loader
+        setLoading(false);
       }
     };
 
@@ -41,12 +42,29 @@ export default function NotificationPopup({ onClose }) {
     );
   };
 
-  // ✅ Select/unselect all users
+  // ✅ Select/unselect all users (filtered list only)
   const handleCheckAll = () => {
+    const filteredIds = filteredUsers.map((u) => u.user_id);
+    const allSelected = filteredIds.every((id) => selectedUsers.includes(id));
+
     setSelectedUsers(
-      selectedUsers.length === users.length ? [] : users.map((u) => u.user_id)
+      allSelected
+        ? selectedUsers.filter((id) => !filteredIds.includes(id)) // unselect only filtered
+        : [...new Set([...selectedUsers, ...filteredIds])] // select all filtered
     );
   };
+
+  // ✅ Derived filtered users
+  const filteredUsers = users.filter((user) => {
+  const name = user?.employer_name ?? ""; // fallback empty string
+  const id = String(user?.user_id ?? "");
+  return (
+    name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    id.includes(searchTerm)
+  );
+  });
+
+  
 
   // ✅ Send notification API
   const handleSendNotification = async () => {
@@ -119,6 +137,15 @@ export default function NotificationPopup({ onClose }) {
               placeholder="Type your notification message here..."
             />
 
+            {/* ✅ Search bar */}
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="mb-2 p-2 rounded border border-gray-400 w-full"
+              placeholder="🔍 Search users by ID or name..."
+            />
+
             {/* User List */}
             <div className="overflow-y-auto max-h-40 border rounded p-2 bg-white">
               <label className="block font-bold mb-2">Send To:</label>
@@ -127,20 +154,25 @@ export default function NotificationPopup({ onClose }) {
                 <p className="text-sm text-purple-600 font-semibold">
                   ⏳ Loading users...
                 </p>
-              ) : users.length === 0 ? (
-                <p className="text-sm text-gray-600">No users found</p>
+              ) : filteredUsers.length === 0 ? (
+                <p className="text-sm text-gray-600">No matching users</p>
               ) : (
                 <>
                   <label className="flex items-center gap-2 mb-2 font-semibold text-purple-700">
                     <input
                       type="checkbox"
-                      checked={selectedUsers.length === users.length}
+                      checked={
+                        filteredUsers.length > 0 &&
+                        filteredUsers.every((u) =>
+                          selectedUsers.includes(u.user_id)
+                        )
+                      }
                       onChange={handleCheckAll}
                     />
-                    <span>Check All</span>
+                    <span>Check All (Filtered)</span>
                   </label>
 
-                  {users.map((user) => (
+                  {filteredUsers.map((user) => (
                     <label
                       key={user.user_id}
                       className="flex items-center gap-2 mb-1 ml-3"
@@ -150,7 +182,7 @@ export default function NotificationPopup({ onClose }) {
                         checked={selectedUsers.includes(user.user_id)}
                         onChange={() => handleUserSelect(user.user_id)}
                       />
-                      <span>{`User #${user.user_id}- ${user.employer_name}`}</span>
+                      <span>{`User #${user.user_id} - ${user.employer_name}`}</span>
                     </label>
                   ))}
                 </>
@@ -166,7 +198,7 @@ export default function NotificationPopup({ onClose }) {
             <div className="absolute bottom-[60px] left-1/2 -translate-x-1/2">
               <button
                 onClick={handleSendNotification}
-                disabled={loading} // disable while fetching
+                disabled={loading}
                 className="flex items-center gap-2 text-white font-bold py-1 px-4 rounded-full disabled:opacity-50"
                 style={{
                   background: "linear-gradient(to right, #5b0e2d, #a83279)",

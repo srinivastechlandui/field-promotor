@@ -6,6 +6,8 @@ import ConfirmModal from "./ConfirmModal";
 import axios from "axios";
 import BankDetailsModal from "./BankDetailsModel";
 import BASE_URL from  '../utils/Urls';
+import AccessModal from "./AccessModal";
+
 export default function EyeIconBigPopup({ onClose }) {
 
   const [showKeypad, setShowKeypad] = useState(false);
@@ -14,6 +16,7 @@ export default function EyeIconBigPopup({ onClose }) {
   const [bankDetails, setBankDetails] = useState([]);
   const [selectedBank, setSelectedBank] = useState(null);
    const SECONDARY_LOCK = process.env.SECONDARY_LOCK || "2580";
+   const [showAccess, setShowAccess] = useState(false);
   // ✅ Fetch bank details on mount
   useEffect(() => {
     const fetchBankDetails = async () => {
@@ -175,6 +178,12 @@ export default function EyeIconBigPopup({ onClose }) {
                   <span className="text-gray-500">No Bank Details</span>
                 )}
               </div>
+              {/* <div
+                onClick={() => setShowAccess(true)}
+                className="cursor-pointer border-4 border-green-500 rounded-2xl bg-white px-5 h-[40px] flex items-center justify-center -translate-x-[10px] translate-y-3"
+              >
+                <span className="font-bold text-green-600">Access</span>
+              </div> */}
               {/* Due Section */}
               <div className="border-4 border-red-500 rounded-2xl bg-white px-5 h-[40px] flex items-center justify-center -translate-x-[20px] translate-y-3">
                 <span className="font-bold text-red-500 mr-2">DUE</span>
@@ -186,6 +195,7 @@ export default function EyeIconBigPopup({ onClose }) {
           </div>
         </div>
       )}
+      {showAccess && <AccessModal onClose={() => setShowAccess(false)} />}
       {selectedBank && (
         <BankDetailsModal
           bank={selectedBank}

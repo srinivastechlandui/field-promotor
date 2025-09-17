@@ -101,7 +101,7 @@ const Header = () => {
           {/* Videos Button */}
           <button onClick={() => setShowVideosPopup(true)}
              className="relative flex items-center justify-center gap-4 w-[322px] h-[123px] bg-blue-600 hover:bg-blue-700 text-[#fffafa] rounded-r-3xl shadow-md">
-            <span className="bg-gray-200 w-[30px] h-[30px] rounded-full"></span>
+            <span className="bg-gray-200 w-[30px] h-[30px] rounded-full">📺</span>
             <span className="text-[25px] font-extrabold font-inter">Videos for you</span>
             <div 
               className="absolute bottom-2 left-10 text-4xl text-red-500">

@@ -122,6 +122,7 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
             employer_name: user.employer_name,
             joinedDate: user.created_at,
             updated_at: user.updated_at,
+            onboarding_fee: user.onboarding_fee,
             bankedEarnings: "$0",
             paidEarnings: "$0",
             livePayoutBills: "$0",

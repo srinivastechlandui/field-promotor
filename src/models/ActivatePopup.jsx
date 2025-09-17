@@ -270,7 +270,7 @@ const ActivatePopup = ({ user, onClose, image }) => {
 
                 {/* Right Side - Triangle with Unactivate */}
                 <div className="relative flex flex-col items-center scale-90">
-                    <div className="w-0 h-0 border-l-[42.5px] border-r-[42.5px] border-b-[136px] border-l-transparent border-r-transparent border-b-[#C86E6E]"></div>
+                    {/* <div className="w-0 h-0 border-l-[42.5px] border-r-[42.5px] border-b-[136px] border-l-transparent border-r-transparent border-b-[#C86E6E]"></div> */}
                     <div className="mt-[-16px] rounded-full border-2 border-[#FF0E12] bg-white flex items-center justify-center">
                         <span className="text-[#FF0E12] font-bold text-xl">UN Activate</span>
                     </div>
@@ -497,9 +497,9 @@ const ActivatePopup = ({ user, onClose, image }) => {
                         )}
                         <div className="w-full text-[1xl] mb-1 tracking-tight text-black mt-2 text-center">Valid between</div>
                         <div className="w-[180px] text-[1xl] mb-1 tracking-tight text-black mt-2 text-center"> {user.valid_date} to {user.expired_date}</div>
-                        <div className="w-full mt-1">
-                            <div className="text-sm font-semibold mb-1">Banked earnings</div>
-                            <div
+                        <div className="w-full mt-1 justify-center">
+                            {/* <div className="text-sm font-semibold mb-1">Banked earnings</div> */}
+                            {/* <div
                                 className="w-[92px] h-[15px] bg-cover bg-center flex flex-row gap-2 items-center justify-center rounded-lg"
                                 style={{ backgroundImage: `url(${bank})` }}>
                                 {[...Array(6)].map((_, i) => (
@@ -508,9 +508,9 @@ const ActivatePopup = ({ user, onClose, image }) => {
                                         className="w-[6px] h-[7px] bg-white border border-black rounded-sm"
                                     />
                                 ))}
-                            </div>
+                            </div> */}
                             <div
-                                className="flex items-center bg-white rounded-lg border border-red-200 px-3 py-2 shadow-md w-[136px] h-[63px] relative my-2">
+                                className="flex  items-center bg-white rounded-lg border border-red-200 px-3 py-2 shadow-md w-[136px] h-[63px] relative my-2">
                                 <div className=" absolute text-xs text-gray-600 font-medium mb-[47px]">Amount</div>
                                 <div className="flex items-center w-full relative justify-between">
                                     <div
@@ -672,8 +672,22 @@ const ActivatePopup = ({ user, onClose, image }) => {
                         <span className="text-semibold text-[8px]">Pending</span>
                         {/* <span className="text-semibold text-[8px]">live run</span> */}
                     </div>
+                    {/* Transaction Payment Row */}
+                    <div className="flex flex-col w-[139px] space-y-2 mb-2">
+                        <div className="flex flex-col bg-green-50 border border-green-300 rounded px-2 py-1 text-[10px] font-semibold">
+                            <div className="flex items-center justify-between">
+                                <span className="text-green-700">Transaction Payment</span>
+                                <span className="text-green-900">₹{user.onboarding_fee || 0}</span>
+                            </div>
+                            {user.transaction_id && (
+                                <div className="flex items-center justify-end mt-1">
+                                    <span className="text-[9px] text-gray-700 font-normal">Txn ID: {user.transaction_id}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                     <div className="flex flex-col w-[139px] h-[1.5px] space-y-6">
-                        {[...Array(10)].map((_, i) => (
+                        {[...Array(7)].map((_, i) => (
                             <div
                                 key={i}
                                 className="border border-[#D399D2] rounded-sm"
@@ -681,7 +695,6 @@ const ActivatePopup = ({ user, onClose, image }) => {
                         ))}
                     </div>
                 </div>
-
                 
                         {/* card 3  */}
                      <div

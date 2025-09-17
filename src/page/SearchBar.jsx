@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FiPlus, FiSearch, FiX, FiEdit, FiTrash2 } from "react-icons/fi";
+import { FiPlus, FiSearch, FiX, FiEdit } from "react-icons/fi";
 import axios from "axios";
 import BASE_URL from "../utils/Urls"
 
@@ -25,6 +25,7 @@ const SearchBar = ({ searchText, setSearchText }) => {
     if (!newGroup.trim()) return alert("⚠️ Group name required");
     try {
       await axios.post(`${BASE_URL}/groups/`, { group: newGroup });
+      alert("✅ Group created successfully");
       setNewGroup("");
       fetchGroups();
     } catch (err) {
@@ -37,6 +38,7 @@ const SearchBar = ({ searchText, setSearchText }) => {
     if (!editingGroup?.group.trim()) return alert("⚠️ Group name required");
     try {
       await axios.put(`${BASE_URL}/groups/${id}`, { group: editingGroup.group });
+      alert("✅ Group updated successfully");
       setEditingGroup(null);
       fetchGroups();
     } catch (err) {
@@ -45,15 +47,16 @@ const SearchBar = ({ searchText, setSearchText }) => {
   };
 
   // ✅ Delete group
-  const deleteGroup = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this group?")) return;
-    try {
-      await axios.delete(`${BASE_URL}/groups/${id}`);
-      fetchGroups();
-    } catch (err) {
-      alert(err.response?.data?.message || "❌ Failed to delete group");
-    }
-  };
+  // const deleteGroup = async (id) => {
+  //   if (!window.confirm("Are you sure you want to delete this group?")) return;
+  //   try {
+  //     await axios.delete(`${BASE_URL}/groups/${id}`);
+  //     alert("✅ Group Name deleted successfully, But not the Related Users!");
+  //     fetchGroups();
+  //   } catch (err) {
+  //     alert(err.response?.data?.message || "❌ Failed to delete group");
+  //   }
+  // };
 
   useEffect(() => {
     if (showModal) fetchGroups();
@@ -165,13 +168,13 @@ const SearchBar = ({ searchText, setSearchText }) => {
                         <FiEdit size={18} />
                       </button>
 
-                      <button
+                      {/* <button
                         onClick={() => deleteGroup(g.group_id)}
                         className="text-red-600 hover:text-red-800 active:scale-90 transition"
                         title="Delete"
                       >
                         <FiTrash2 size={18} />
-                      </button>
+                      </button> */}
                       </div>
                     </>
                   )}
