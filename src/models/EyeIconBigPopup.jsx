@@ -6,7 +6,7 @@ import ConfirmModal from "./ConfirmModal";
 import axios from "axios";
 import BankDetailsModal from "./BankDetailsModel";
 import BASE_URL from  '../utils/Urls';
-import AccessModal from "./AccessModal";
+// import AccessModal from "./AccessModal";
 
 export default function EyeIconBigPopup({ onClose }) {
 
@@ -16,7 +16,7 @@ export default function EyeIconBigPopup({ onClose }) {
   const [bankDetails, setBankDetails] = useState([]);
   const [selectedBank, setSelectedBank] = useState(null);
    const SECONDARY_LOCK = process.env.SECONDARY_LOCK || "2580";
-   const [showAccess, setShowAccess] = useState(false);
+  //  const [showAccess, setShowAccess] = useState(false);
   // ✅ Fetch bank details on mount
   useEffect(() => {
     const fetchBankDetails = async () => {
@@ -195,7 +195,7 @@ export default function EyeIconBigPopup({ onClose }) {
           </div>
         </div>
       )}
-      {showAccess && <AccessModal onClose={() => setShowAccess(false)} />}
+      {/* {showAccess && <AccessModal onClose={() => setShowAccess(false)} />} */}
       {selectedBank && (
         <BankDetailsModal
           bank={selectedBank}
