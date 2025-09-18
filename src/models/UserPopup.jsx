@@ -21,7 +21,7 @@ const UserPopup = ({ onClose }) => {
   useEffect(() => {
     const fetchGroups = async () => {
       try {
-        const res = await axios.get(`${BASE_URL}/groups`);
+        const res = await axios.get(`${BASE_URL}/groups/`);
         if (res.data?.status === "success") {
           setGroups(res.data.result);
         }
