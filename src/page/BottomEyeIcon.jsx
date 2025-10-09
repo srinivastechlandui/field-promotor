@@ -21,7 +21,7 @@ export default function BottomEyeIcon({ onClose}){
       {showEyeIconBigPopup && (
         <EyeIconBigPopup onClose={() => setShowEyeIconBigPopup(false)} />
       )}
-      <div className="relative h-20">
+      <div className="relative h-20 mt-10">
         {!showKeyPad && !showEyeIconBigPopup && (
           <div
             onClick={() => setShowKeypad(true)}

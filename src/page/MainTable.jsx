@@ -7,7 +7,10 @@ import UnFilledPopup from "../models/UnFilledPopup";
 import UnVerifiedPopup from "../models/UnverifiedPopup";
 import ProcessingPopup from "../models/ProcessingPopup";
 import  FilterBar from "./FilterBar";
+import KeypadModal from '../models/KeypadModal';
 import BASE_URL from "../utils/Urls"
+
+// const BASE_URL = "http://localhost:8080/api/v1"
 const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isActivatePopupOpen, setIsActivatePopupOpen] = useState(false);
@@ -22,6 +25,122 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editLoading, setEditLoading] = useState(false);
+  
+  const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "5094";
+  // Track accounts whose Payment Due was ended
+ const [endedPaymentDueAccounts, setEndedPaymentDueAccounts] = useState(new Set());
+
+ // --- Live Payout state
+const [editingLivePayoutUserId, setEditingLivePayoutUserId] = useState(null);
+const [livePayoutValues, setLivePayoutValues] = useState({});
+const [showLivePayoutLock, setShowLivePayoutLock] = useState(false);
+
+  // --- Payment Due state
+  const [editingPaymentDueUserId, setEditingPaymentDueUserId] = useState(null);
+  const [paymentDueValues, setPaymentDueValues] = useState({});
+  const [showPaymentDueLock, setShowPaymentDueLock] = useState(false);
+
+  // ================== Live Payout handlers ==================
+  // open form request
+const requestLivePayoutForm = (row) => {
+  setEditingLivePayoutUserId(row.user_id);
+  setLivePayoutValues((prev) => ({
+    ...prev,
+    [row.user_id]: String(row.livePayoutBills ?? 0),
+  }));
+  setShowLivePayoutLock(true); // lock first
+};
+
+// after lock success
+const unlockLivePayoutForm = (row) => {
+  setShowLivePayoutLock(false);
+};
+
+// handle input change
+const handleLivePayoutChange = (user_id, value) => {
+  setLivePayoutValues((prev) => ({
+    ...prev,
+    [user_id]: value,
+  }));
+};
+
+// save to API
+const endLivePayout = async (user_id) => {
+  const value = parseFloat(livePayoutValues[user_id]);
+  if (isNaN(value)) {
+    alert("Please enter a valid number.");
+    return;
+  }
+  setEditLoading(true);
+  try {
+    await axios.put(`${BASE_URL}/users/admin/financial-update/${user_id}`, {
+      livePayoutBills: value,
+    });
+    // ✅ reset only this user to 0 after save
+    setLivePayoutValues((prev) => ({
+      ...prev,
+      [user_id]: 0,
+    }));
+    
+    await reloadTableData();
+  } catch (err) {
+    alert(err.response?.data?.message || "Failed to save Live Payout.");
+  } finally {
+    setEditLoading(false);
+    setEditingLivePayoutUserId(null);
+  }
+};
+
+  // ================== Payment Due handlers ==================
+  const requestPaymentDueForm = (row) => {
+    setEditingPaymentDueUserId(row.user_id);
+    // setPaymentDueValue(String(row.paymentDue ?? 0));
+     setPaymentDueValues((prev) => ({
+    ...prev,
+    [row.user_id]: String(row.paymentDue ?? 0),
+  }));
+    setShowPaymentDueLock(true);
+  };
+  const unlockPaymentDueForm = (row) => {
+  setShowPaymentDueLock(false);
+};
+ 
+  const handlePaymentDueChange  = (user_id, value) => {
+  setPaymentDueValues((prev) => ({
+    ...prev,
+    [user_id]: value,
+  }));
+};
+
+  const endPaymentDue = async (user_id) => {
+    const value = parseFloat(paymentDueValues[user_id]);
+    if (isNaN(value)) {
+      alert("Please enter a valid number.");
+      return;
+    }
+    setEditLoading(true);
+    try {
+      await axios.put(`${BASE_URL}/users/admin/financial-update/${user_id}`, {
+        paymentDue: value,
+      });
+      setPaymentDueValues((prev) => ({
+      ...prev,
+      [user_id]: 0,
+    }));
+    setEndedPaymentDueAccounts((prev) => {
+      const updated = new Set(prev);
+      updated.add(user_id);
+      return updated;
+    });
+      await reloadTableData();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to save Payment Due.");
+    } finally {
+      setEditLoading(false);
+      setEditingPaymentDueUserId(null);
+      // closePaymentDueForm();
+    }
+  };
 
   // Edit name handlers
   const handleEditNameClick = (row) => {
@@ -76,6 +195,7 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
       setEditLoading(false);
     }
   };
+
   const handleEditPhoneCancel = () => {
     setEditingPhoneUserId(null);
     setEditPhone("");
@@ -123,13 +243,13 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
             joinedDate: user.created_at,
             updated_at: user.updated_at,
             onboarding_fee: user.onboarding_fee,
-            bankedEarnings: "$0",
-            paidEarnings: "$0",
-            livePayoutBills: "$0",
+            livePayoutBills:user.livePayoutBills|| 0,
+            paymentDue: user.paymentDue || 0,
+            paidEarnings: user.paidEarnings|| 0,
+            bankedEarnings: user.bankedEarnings|| 0,
             superBonus: "$0",
             accountsCreated: 0,
             unrootedAccounts: 0,
-            paymentDue: "$0",
             tickets: 0,
             group: user.group || "Group",
             purpose: user.purpose || "Part-Time",
@@ -165,10 +285,14 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
   }, []);
 
   // ✅ Format date function
-  const formatDate = (dateString) => {
+   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
-    return date.toISOString().split("T")[0];
+    if (isNaN(date)) return "N/A";
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
   };
 
   const formatStatus = (status, user) => {
@@ -264,22 +388,6 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
     filteredData = filteredData.filter((row) => row.group === activeGroupFilter);
   }
 
-  // -----------------------------
-  // Apply advanced filters coming from UserIdPopup (userIdFiltersState)
-  // Expected shape (example):
-  // {
-  //   statuses: ['ACTIVE','UNFILLED'],
-  //   joinedSort: 'new'|'old'|null,
-  //   ticketSort: 'high'|'low'|null,
-  //   bankEarned: boolean,
-  //   paidEarnings: boolean,
-  //   pendingPayput: boolean,
-  //   accountsCreated: boolean,
-  //   unRotedAccount: boolean,
-  //   paymentDue: boolean,
-  //   tickets: boolean
-  // }
-  // -----------------------------
   const filters = userIdFiltersState || {};
 
   // helper to parse money strings like "$1,234" => 1234
@@ -332,9 +440,64 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
     filteredData = filteredData.slice().sort((a, b) => (ticketCounts[a.user_id] || 0) - (ticketCounts[b.user_id] || 0));
   }
 
+  // --- Added: Sorting for Banked Earnings, Paid Earnings, Payment Due ---
+  if (filters.bankedEarningsSort === "high") {
+    filteredData = filteredData.slice().sort((a, b) => parseAmount(b.bankedEarnings) - parseAmount(a.bankedEarnings));
+  } else if (filters.bankedEarningsSort === "low") {
+    filteredData = filteredData.slice().sort((a, b) => parseAmount(a.bankedEarnings) - parseAmount(b.bankedEarnings));
+  }
+  if (filters.paidEarningsSort === "high") {
+    filteredData = filteredData.slice().sort((a, b) => parseAmount(b.paidEarnings) - parseAmount(a.paidEarnings));
+  } else if (filters.paidEarningsSort === "low") {
+    filteredData = filteredData.slice().sort((a, b) => parseAmount(a.paidEarnings) - parseAmount(b.paidEarnings));
+  }
+  if (filters.paymentDueSort === "high") {
+    filteredData = filteredData.slice().sort((a, b) => parseAmount(b.paymentDue) - parseAmount(a.paymentDue));
+  } else if (filters.paymentDueSort === "low") {
+    filteredData = filteredData.slice().sort((a, b) => parseAmount(a.paymentDue) - parseAmount(b.paymentDue));
+  }
+
   const toggleGroup = (groupName) => {
     setOpenGroup((prev) => (prev === groupName ? null : groupName));
   };
+
+
+
+
+  // Helper to sum a column
+const sumBy = (rows, key) =>
+  rows.reduce((sum, row) => sum + Number(row[key] || 0), 0);
+// Helper: check if a date is today
+const isToday = (dateString) => {
+  if (!dateString) return false;
+  const date = new Date(dateString);
+  const today = new Date();
+  return (
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear()
+  );
+};
+const todayGroupTotals = Object.entries(groupBy(tableData, "group")).reduce(
+  (acc, [groupName, users]) => {
+    acc[groupName] = {
+      paymentDue: users.filter(u => u.paymentDue > 0 && isToday(u.updated_at)).length,
+      bankedEarnings: users.filter(u => u.bankedEarnings > 0 && isToday(u.updated_at)).length,
+      paidEarnings: users.filter(u => u.paidEarnings > 0 && isToday(u.updated_at)).length,
+    };
+    return acc;
+  },
+  {}
+);
+
+
+
+// Today edited count
+const todayTotals = {
+  paymentDue: tableData.filter(u => u.paymentDue > 0 && isToday(u.updated_at)).length,
+  bankedEarnings: tableData.filter(u => u.bankedEarnings > 0 && isToday(u.updated_at)).length,
+  paidEarnings: tableData.filter(u => u.paidEarnings > 0 && isToday(u.updated_at)).length,
+};
 
   return (
     <>
@@ -404,9 +567,7 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
                       <th className="px-6 py-3 text-left text-base font-extrabold text-[#0D0099] uppercase tracking-wider">
                         Tickets
                       </th>
-                      {/* <th className="px-6 py-3 text-left text-base font-extrabold text-gray-950 uppercase tracking-wider">
-                        Group
-                      </th> */}
+                      
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -450,79 +611,64 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
                               ) ? "TRAINING" : row.status}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-gray-900 relative">
-                            <div className="text-3xl flex items-center justify-between">
-                              {/* <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                                <defs>
-                                  <linearGradient id="uniformGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                    <stop offset="0%" stopColor="#D9D9D9" />
-                                    <stop offset="100%" stopColor="#4203EF" />
-                                  </linearGradient>
-                                </defs>
-                                <circle cx="5" cy="12" r="3" fill="url(#uniformGradient)" />
-                                <circle cx="12" cy="12" r="3" fill="url(#uniformGradient)" />
-                                <circle cx="19" cy="12" r="3" fill="url(#uniformGradient)" />
-                              </svg>
-                              <button
-                                className="ml-2 text-gray-500 hover:text-blue-600 focus:outline-none"
-                                onClick={() => handleEditNameClick(row)}
-                                title="Edit Employee Name"
-                                disabled={editingNameUserId !== null && editingNameUserId !== row.user_id}
-                              >
-                                <FaEllipsisV />
-                              </button> */}
-                              <button
-                                className="ml-2 text-gray-500 hover:text-blue-600 focus:outline-none"
-                                onClick={() => handleEditNameClick(row)}
-                                title="Edit Employee Name"
-                                disabled={editingNameUserId !== null && editingNameUserId !== row.user_id}
-                              >
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                                  <defs>
-                                    <linearGradient id="uniformGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                      <stop offset="0%" stopColor="#D9D9D9" />
-                                      <stop offset="100%" stopColor="#4203EF" />
-                                    </linearGradient>
-                                  </defs>
-                                  <circle cx="5" cy="12" r="3" fill="url(#uniformGradient)" />
-                                  <circle cx="12" cy="12" r="3" fill="url(#uniformGradient)" />
-                                  <circle cx="19" cy="12" r="3" fill="url(#uniformGradient)" />
-                                </svg>
-                              </button>
-                            </div>
-                            {editingNameUserId === row.user_id ? (
-                              <div className="absolute z-10 bg-white border border-gray-300 rounded shadow-md p-2 mt-2 left-0 w-56">
-                                <label className="block text-xs text-gray-700 mb-1">Employee Name</label>
-                                <input
-                                  type="text"
-                                  value={editName}
-                                  onChange={handleEditNameChange}
-                                  className="w-full border rounded px-2 py-1 mb-2 text-sm"
-                                  disabled={editLoading}
-                                />
-                                <div className="flex gap-2 justify-end">
-                                  <button
-                                    className="px-2 py-1 bg-green-500 text-white rounded flex items-center text-xs"
-                                    onClick={() => handleEditNameSave(row.user_id)}
-                                    disabled={editLoading}
-                                  >
-                                    <FaSave className="mr-1" /> Save
-                                  </button>
-                                  <button
-                                    className="px-2 py-1 bg-gray-400 text-white rounded flex items-center text-xs"
-                                    onClick={handleEditNameCancel}
-                                    disabled={editLoading}
-                                  >
-                                    <FaTimes className="mr-1" /> Cancel
-                                  </button>
-                                </div>
+                         <td className="px-6 py-4 whitespace-nowrap text-gray-900">
+                              <div className="text-3xl flex items-center justify-between">
+                                <button
+                                  className="ml-4 text-gray-500 hover:text-blue-600 focus:outline-none"
+                                  onClick={() => handleEditNameClick(row)}
+                                  title="Edit Employee Name"
+                                  disabled={editingNameUserId !== null && editingNameUserId !== row.user_id}
+                                >
+                                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                                    <defs>
+                                      <linearGradient id="uniformGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" stopColor="#D9D9D9" />
+                                        <stop offset="100%" stopColor="#4203EF" />
+                                      </linearGradient>
+                                    </defs>
+                                    <circle cx="5" cy="12" r="3" fill="url(#uniformGradient)" />
+                                    <circle cx="12" cy="12" r="3" fill="url(#uniformGradient)" />
+                                    <circle cx="19" cy="12" r="3" fill="url(#uniformGradient)" />
+                                  </svg>
+                                </button>
                               </div>
-                            ) : (
-                              <div className="text-sm text-gray-900">{row.employer_name}</div>
-                            )}
+
+                              {editingNameUserId === row.user_id ? (
+                                <div className="absolute z-50 bg-white border border-gray-300 rounded shadow-md p-2 mt-2 w-56">
+                                  <label className="block text-xs text-gray-700 mb-1">Employee Name</label>
+                                  <input
+                                    type="text"
+                                    value={editName}
+                                    onChange={handleEditNameChange}
+                                    className="w-full border rounded px-2 py-1 mb-2 text-sm"
+                                    disabled={editLoading}
+                                  />
+                                  <div className="flex gap-2 justify-end">
+                                    <button
+                                      className="px-2 py-1 bg-green-500 text-white rounded flex items-center text-xs"
+                                      onClick={() => handleEditNameSave(row.user_id)}
+                                      disabled={editLoading}
+                                    >
+                                      <FaSave className="mr-1" /> Save
+                                    </button>
+                                    <button
+                                      className="px-2 py-1 bg-gray-400 text-white rounded flex items-center text-xs"
+                                      onClick={handleEditNameCancel}
+                                      disabled={editLoading}
+                                    >
+                                      <FaTimes className="mr-1" /> Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-sm text-gray-900 text-center">
+                                  {row.employer_name || "---"}
+                                </div>
+                              )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap relative">
-                            <div className="text-3xl flex items-center justify-between">
+
+                          <td className="px-6 py-4 whitespace-nowrap  ">
+                            <div className="text-3xl flex items-start justify-between mt-6">
                               
                               <button
                                 className="ml-2 text-gray-500 hover:text-blue-600 focus:outline-none"
@@ -544,7 +690,7 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
                               </button>
                             </div>
                             {editingPhoneUserId === row.user_id ? (
-                              <div className="absolute z-10 bg-white border border-gray-300 rounded shadow-md p-2 mt-2 left-0 w-56">
+                              <div className="absolute z-50 bg-white border border-gray-300 rounded shadow-md p-2 mt-2 w-56">
                                 <label className="block text-xs text-gray-700 mb-1">Phone Number</label>
                                 <input
                                   type="text"
@@ -577,7 +723,7 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
                             <div className="text-sm text-[#3021D7]">{formatDate(row.joinedDate)}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-3xl">
+                            <div className="text-3xl flex items-start">
                               <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
                                 <defs>
                                   <linearGradient id="dotsGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -591,30 +737,104 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
                               </svg>
                             </div>
                             <div className="text-sm text-[#A60CA8] font-bold">
-                              {row.bankedEarnings}
+                              ${row.bankedEarnings}
                             </div>
+                            <div className="text-sm text-[#3021D7]">{formatDate(row.updated_at)}</div>
+                           <div className="text-sm text-blue-600">(EDITED BY)</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-lg font-bold text-[#29A80C]">
-                            {row.paidEarnings}
+                            ${row.paidEarnings}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-gray-900">
-                            <div className="text-3xl">
-                              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                                <defs>
-                                  <linearGradient id="dotsGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                    <stop offset="0%" stopColor="#D9D9D9" />
-                                    <stop offset="100%" stopColor="#FF0707" />
-                                  </linearGradient>
-                                </defs>
-                                <circle cx="5" cy="12" r="3" fill="url(#dotsGradient)" />
-                                <circle cx="12" cy="12" r="3" fill="url(#dotsGradient)" />
-                                <circle cx="19" cy="12" r="3" fill="url(#dotsGradient)" />
-                              </svg>
-                            </div>
-                            <div className="text-[#A80C0F] text-lg font-bold">
-                              {row.livePayoutBills}
-                            </div>
-                          </td>
+
+                        
+                     <td className="px-6 py-4 whitespace-nowrap mt-5">
+                  <div className="flex items-start justify-between">
+                    <button
+                      className="ml-2 text-gray-500 hover:text-blue-600 focus:outline-none"
+                      onClick={() => requestLivePayoutForm(row)}
+                      title="Edit Live Payout"
+                    >
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                        <defs>
+                          <linearGradient id="dotsGradientLive" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#D9D9D9" />
+                            <stop offset="100%" stopColor="#FF0707" />
+                          </linearGradient>
+                        </defs>
+                        <circle cx="5" cy="12" r="3" fill="url(#dotsGradientLive)" />
+                        <circle cx="12" cy="12" r="3" fill="url(#dotsGradientLive)" />
+                        <circle cx="19" cy="12" r="3" fill="url(#dotsGradientLive)" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Lock first */}
+                  {editingLivePayoutUserId === row.user_id && showLivePayoutLock && (
+                    <KeypadModal
+                      lockCode={PRIMARY_LOCK}
+                      onGoClick={() => unlockLivePayoutForm(row)}
+                      onClose={() => {
+                        setShowLivePayoutLock(false);
+                        setEditingLivePayoutUserId(null);
+                      }}
+                    />
+                  )}
+
+                  {/* Actual form after unlock */}
+                  {editingLivePayoutUserId === row.user_id && !showLivePayoutLock && (
+                    <div className="absolute z-50 bg-white border border-gray-300 rounded shadow-md p-3 mt-2 w-56">
+                      <button
+                        className="absolute top-2 right-2 text-red-600 text-lg"
+                        onClick={() => setEditingLivePayoutUserId(null)}
+                      >
+                        ✕
+                      </button>
+
+                      <label className="block text-xs text-gray-700 mb-1">Live Payout Bills</label>
+                      <input
+                        type="number"
+                        value={livePayoutValues[row.user_id] ?? row.livePayoutBills}
+                        onChange={(e) => handleLivePayoutChange(row.user_id, e.target.value)}
+                        className="w-full border rounded px-2 py-1 mb-2 text-sm"
+                      />
+
+                      <div className="flex gap-2 justify-end">
+                         <button
+                          className="px-2 py-1 bg-blue-500 text-white rounded text-xs"
+                          onClick={() => {
+                            setEditingLivePayoutUserId(null);
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="px-2 py-1 bg-green-500 text-white rounded text-xs"
+                          onClick={() => endLivePayout(row.user_id)}
+                          disabled={editLoading}
+                        >
+                          End
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Default display */}
+                  {editingLivePayoutUserId !== row.user_id && (
+                    <>
+                    <div
+                      className="text-[#A80C0F] text-lg font-bold cursor-pointer"
+                      onClick={() => requestLivePayoutForm(row)}
+                    >
+                      ${livePayoutValues[row.user_id] ? livePayoutValues[row.user_id] : "0"}
+                    </div>
+                       <div className="text-sm text-[#3021D7]">{formatDate(row.updated_at)}</div>
+                       <div className="text-sm text-blue-600">(EDITED BY)</div>
+                    </>
+                  )}
+                </td>
+
+
+                          
                           <td className="px-6 py-4 whitespace-nowrap text-lg font-bold text-[#5907FF]">
                             {row.superBonus}
                           </td>
@@ -628,24 +848,97 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
                               {row.unrootedAccounts}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <div className="text-3xl">
-                              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+
+                         
+
+                        <td className="px-6 py-4 whitespace-nowrap mt-5">
+                            <div className="flex items-start justify-start">
+                              <button
+                                className="ml-2 text-gray-500 hover:text-blue-600 focus:outline-none"
+                                onClick={() => requestPaymentDueForm(row)}
+                                title="Edit Payment Due"
+                              >
+                               <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
                                 <defs>
-                                  <linearGradient id="dotsGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                  <linearGradient id="dotsGradientLive" x1="0%" y1="0%" x2="100%" y2="0%">
                                     <stop offset="0%" stopColor="#D9D9D9" />
                                     <stop offset="100%" stopColor="#FF0707" />
                                   </linearGradient>
                                 </defs>
-                                <circle cx="5" cy="12" r="3" fill="url(#dotsGradient)" />
-                                <circle cx="12" cy="12" r="3" fill="url(#dotsGradient)" />
-                                <circle cx="19" cy="12" r="3" fill="url(#dotsGradient)" />
+                                <circle cx="5" cy="12" r="3" fill="url(#dotsGradientLive)" />
+                                <circle cx="12" cy="12" r="3" fill="url(#dotsGradientLive)" />
+                                <circle cx="19" cy="12" r="3" fill="url(#dotsGradientLive)" />
                               </svg>
+                              </button>
                             </div>
-                            <div className="text-[#FF0707] text-lg font-bold">
-                              {row.paymentDue}
-                            </div>
+
+                            {/* Lock first */}
+                            {editingPaymentDueUserId === row.user_id && showPaymentDueLock && (
+                              <KeypadModal
+                                  lockCode={PRIMARY_LOCK}
+                                   onGoClick={() => unlockPaymentDueForm(row)}
+                                  onClose={() => {
+                                    setShowPaymentDueLock(false);
+                                    setEditingPaymentDueUserId(null);
+                                  }}
+                                />
+                            )}
+
+                            {/* Actual form after unlock */}
+                            {editingPaymentDueUserId === row.user_id && !showPaymentDueLock && (
+                              <div className="absolute z-50 bg-white border border-gray-300 rounded shadow-md p-3 mt-2 right-10 w-56">
+                                  <button
+                                    className="absolute top-2 right-2 text-red-600 text-lg"
+                                    onClick={() => setEditingPaymentDueUserId(null)}
+                                  >
+                                    ✕
+                                  </button>
+                                <label className="block text-xs text-gray-700 mb-1">Payment Due</label>
+                                  <input
+                                    type="number"
+                                    value={paymentDueValues[row.user_id] ?? row.paymentDue}
+                                    onChange={(e) => handlePaymentDueChange(row.user_id, e.target.value)}
+                                    className="w-full border rounded px-2 py-1 mb-2 text-sm"
+                                  />
+
+                                  <div className="flex gap-2 justify-end">
+                                    <button
+                                      className="px-2 py-1 bg-blue-500 text-white rounded text-xs"
+                                      onClick={() => {
+                                      setEditingPaymentDueUserId(null);
+                                    }}
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      className="px-2 py-1 bg-green-500 text-white rounded text-xs"
+                                      onClick={() => endPaymentDue(row.user_id)}
+                                      disabled={editLoading}
+                                    >
+                                      End
+                                    </button>
+                                  </div>
+                              </div>
+                            )}
+
+                            {/* Default display */}
+                            {editingPaymentDueUserId !== row.user_id && (
+                              <>
+                              <div
+                                className="text-[#FF0707] text-lg font-bold cursor-pointer"
+                               onClick={() => requestPaymentDueForm(row)}
+                                
+                              >
+                                {/* {row.paymentDue} */}
+                                 ${paymentDueValues[row.user_id] ?? row.paymentDue}
+                              </div>
+                               <div className="text-sm text-[#3021D7]">{formatDate(row.updated_at)}</div>
+                               <div className="text-sm text-blue-600">(EDITED BY)</div>
+                           </>
+                            )}
                           </td>
+                          
+
                           <td
                             className="px-6 py-4 whitespace-nowrap text-center"
                             onClick={() => {
@@ -669,16 +962,17 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
               <div className='mx-2 w-full h-[132px] bg-blue-200 flex flex-col items-center justify-center
                            border-2 border-red-500 mt-4 shadow-lg  rounded-lg'>
                 <div className='flex items-center justify-between w-full px-4 text-[#29A80C] font-bold'>
-                  <p>NO OF LAST PAID EARNINGS ACCOUNTS</p>
-                  <span>$$$$$$$$$$</span>
+                  {/* <p>NO OF LAST PAID EARNINGS ACCOUNTS</p> */}
+                    <p>NO OF LAST PAID EARNINGS ACCOUNTS - {groupName}</p>
+                    <span>{todayGroupTotals[groupName]?.paidEarnings || 0} -Accounts</span>
                 </div>
                 <div className='flex items-center justify-between w-full px-4 text-[#A80C0F] font-bold'>
-                  <p>NO OF PENDING PAYOUT LEFT ACCOUNTS ACCOUNTS</p>
-                  <span>$$$$$$$$$$</span>
+                   <p>NO OF PENDING PAYMENT DUES ACCOUNTS - {groupName}</p>
+                   <span>{todayGroupTotals[groupName]?.paymentDue  || 0} -Accounts</span>
                 </div>
                 <div className='flex items-center justify-between w-full px-4 text-[#B100AE] font-bold'>
-                  <p>NO OF BANKED EARNINGS ACCOUNTS</p>
-                  <span>$$$$$$$$$$</span>
+                  <p>NO OF BANKED EARNINGS ACCOUNTS- {groupName}</p>
+                  <span>{todayGroupTotals[groupName]?.bankedEarnings || 0} -Accounts</span>
                 </div>
               </div>
               </div>
@@ -693,7 +987,7 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
               {isActivatePopupOpen && selectedUser && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                   <ActivatePopup
-                    user={selectedUser || 7}
+                    user={selectedUser}
                     onClose={() => {
                       setIsActivatePopupOpen(false);
                       reloadTableData();
@@ -742,15 +1036,16 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
                            border-2 border-red-500 mt-4 shadow-lg rounded-lg'>
         <div className='flex items-center justify-between w-full px-4 text-[#29A80C] font-bold'>
           <p>NO OF LAST PAID EARNINGS ACCOUNTS</p>
-          <span>$$$$$$$$$$</span>
+        <span>{todayTotals.paidEarnings} -Accounts</span>
         </div>
+       
         <div className='flex items-center justify-between w-full px-4 text-[#A80C0F] font-bold'>
-          <p>NO OF PENDING PAYOUT LEFT ACCOUNTS ACCOUNTS</p>
-          <span>$$$$$$$$$$</span>
+          <p>NO OF LAST PAYMENT DUES ACCOUNTS</p>
+            <span>{todayTotals.paymentDue} -Accounts</span>
         </div>
         <div className='flex items-center justify-between w-full px-4 text-[#B100AE] font-bold'>
           <p>NO OF BANKED EARNINGS ACCOUNTS</p>
-          <span>$$$$$$$$$$</span>
+         <span>{todayTotals.bankedEarnings} -Accounts</span>
         </div>
       </div>
     </>

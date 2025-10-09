@@ -1,35 +1,30 @@
-
 import React, { useState, useEffect } from "react";
 import { IoClose } from "react-icons/io5";
 import ConfirmModal from "./ConfirmModal";
-import { FaPaperPlane } from "react-icons/fa";
+import { FaPaperPlane, FaUserAlt } from "react-icons/fa";
 import axios from "axios";
 import BASE_URL from "../utils/Urls";
-
+import UserSelectModal from "./UserSelectModal";
 
 export default function AccountStatementModal({ onClose }) {
   const [showMain, setShowMain] = useState(true);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [search, setSearch] = useState("");
+  const [showUserSelectModal, setShowUserSelectModal] = useState(false);
   const [users, setUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null); // State to hold the selected user object
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const emptyLines = 6;
 
+  // Fetch users when the component mounts
   useEffect(() => {
     const fetchUsers = async () => {
-      setLoading(true);
-      setError("");
       try {
-        const res = await axios.get(`${BASE_URL}/users/`);
-        // Only users with transaction_id === null
-        const filtered = (res.data?.users || []).filter(
-          u => u.transaction_id === null
-        );
-        setUsers(filtered);
-      } catch (err) {
-        setError("Failed to fetch users");
+        setLoading(true);
+        const { data } = await axios.get(`${BASE_URL}/users/`);
+        setUsers(data?.users || []);
+      } catch (error) {
+        console.error("❌ Failed to fetch users", error);
+        alert("❌ Failed to fetch users");
       } finally {
         setLoading(false);
       }
@@ -37,24 +32,61 @@ export default function AccountStatementModal({ onClose }) {
     fetchUsers();
   }, []);
 
-  // Filter users by search (employer_name)
-  const filteredUsers = users.filter(u =>
-    (
-      (u.employer_name || "").toLowerCase().includes(search.toLowerCase()) ||
-      (u.user_id || "").toLowerCase().includes(search.toLowerCase()) ||
-      (u.onboarding_fee || "").toLowerCase().includes(search.toLowerCase())
-    )
-  );
   const handleCloseAll = () => {
     setShowMain(false);
     setShowConfirm(false);
     onClose?.();
   };
 
+  // Step 1: Handle user selection from the list
+  const handleUserClick = (user) => {
+    setSelectedUser(user);
+    // You can set a default message here if you like
+    setMessage(`Hello ${user.employer_name}, your onboarding fee of Rs. ${user.onboarding_fee} is due.`);
+  };
+
+  // Step 2: Go to the UserSelectModal after the message is ready
+  const handleSendClick = () => {
+    if (!message.trim()) {
+      alert("⚠️ Please enter a message before sending");
+      return;
+    }
+    setShowUserSelectModal(true);
+  };
+
+  // Step 3: After selecting recipients, actually send the notification
+  const handleUserSelectSubmit = async (users) => {
+    setShowUserSelectModal(false);
+    
+    // Use the selected user's onboarding fee
+    const amount = selectedUser.onboarding_fee;
+    const finalMessage = message.replace(/{{amount}}/g, amount);
+
+    const payload = {
+      message: finalMessage,
+      // You can send to all selected users from the modal
+      user_ids: users,
+    };
+
+    try {
+      setLoading(true);
+      await axios.post(`${BASE_URL}/notifications/`, payload);
+      alert(`✅ Sent notification to ${users.length} user(s).`);
+      setMessage("");
+      setSelectedUser(null);
+      setShowConfirm(true);
+    } catch (error) {
+      console.error("❌ Failed to send notification", error);
+      alert("❌ Failed to send notification");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       {showMain && (
-        <div className="fixed top-0 left-0 w-80 h-full flex items-start z-50 ">
+        <div className="fixed top-0 left-0 w-80 h-full flex items-start z-50">
           <div
             className="rounded-lg shadow-lg flex flex-col p-4 relative animate-[slideInLeft_0.4s_ease-out_forwards]"
             style={{
@@ -72,91 +104,85 @@ export default function AccountStatementModal({ onClose }) {
                   textShadow: "2px 2px 4px rgba(0,0,0,0.4)",
                 }}
               >
-                {selectedUser ? `Payment Due` : `Payment Dues`}
+                Payment Due
               </h2>
-              <button
-                onClick={onClose}
-                className="p-1 rounded bg-red-600"
-              >
+              <button onClick={onClose} className="p-1 rounded bg-red-600">
                 <IoClose className="text-white text-2xl" />
               </button>
             </div>
 
-            {/* Search Bar */}
-            {!selectedUser && (
-              <div className="mb-4">
-                <input
-                  type="text"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="Search User_id, employer name..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring"
-                />
-                <div className="mt-2 max-h-[70] overflow-y-auto">
-                  {loading && <div className="text-gray-500 text-sm">Loading...</div>}
-                  {error && <div className="text-red-500 text-sm">{error}</div>}
-                  {!loading && !error && filteredUsers.length === 0 && (
-                    <div className="text-gray-500 text-sm">No users found.</div>
-                  )}
-                  {!loading && !error && filteredUsers.map(user => (
-                    <div
-                      key={user.user_id}
-                      className="cursor-pointer px-2 py-1 hover:bg-purple-100 rounded text-black border-b border-gray-400"
-                      onClick={() => setSelectedUser(user)}
-                    >
-                      <div className="font-semibold">{user.user_id}</div>
-                      <div className="text-xs">{user.employer_name}</div>
-                      <div className="text-xs text-purple-700">Onboarding Fee: ₹{user.onboarding_fee}</div>
-                    </div>
-                  ))}
-                </div>
+            {/* Conditional Rendering based on selectedUser */}
+            {!selectedUser ? (
+              // Initial view: User list
+              <div className="flex-grow overflow-y-auto">
+                <h3 className="text-md font-semibold mb-2 text-gray-800">
+                  Select a User
+                </h3>
+                {loading ? (
+                  <p className="text-center text-gray-500">Loading users...</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {users.map((user) => (
+                      <li
+                        key={user.user_id}
+                        onClick={() => handleUserClick(user)}
+                        className="p-3 border rounded-lg bg-white shadow-sm hover:bg-gray-100 cursor-pointer transition flex items-center gap-3"
+                      >
+                        <FaUserAlt className="text-purple-500" />
+                        <div>
+                          <p className="font-semibold text-gray-700">
+                            {user.employer_name}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            ID: {user.user_id}
+                          </p>
+                          <p className="text-sm font-bold text-red-500">
+                            Rs. {user.onboarding_fee}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-            )}
-
-            {/* Payment Due Details for Selected User */}
-            {selectedUser && (
+            ) : (
+              // Second view: Payment details and message input
               <>
                 <div className="text-center mb-6 text-gray-700 font-mono">
-                  <span className="text-gray-600">######## </span>
-                  <span className="text-red-600 font-bold">[₹{selectedUser.onboarding_fee}]</span>
-                  <span className="text-gray-600"> ########</span>
+                  <span className="text-gray-600">Payment for </span>
+                  <span className="text-red-600 font-bold">
+                    {selectedUser.employer_name}
+                  </span>
+                  <span className="text-gray-600"> is due.</span>
+                  <br />
+                  <span className="text-red-600 font-bold">
+                    [₹{selectedUser.onboarding_fee}]
+                  </span>
                 </div>
-                <div className="text-center text-xs text-gray-700 mb-2">
-                  User ID: <span className="font-semibold">{selectedUser.user_id}</span>
-                </div>
-                <div className="text-center text-xs text-gray-700 mb-2">
-                  Employer Name: <span className="font-semibold">{selectedUser.employer_name}</span>
-                </div>
-                {/* Horizontal lines */}
-                <div className="flex flex-col gap-2 overflow-y-auto mb-4 flex-grow">
-                  {Array.from({ length: emptyLines }).map((_, index) => (
-                    <div
-                      key={index}
-                      className="border-b-4 border-black pb-1 text-sm text-black my-4"
-                    >
-                    </div>
-                  ))}
-                </div>
-                {/* Send Button */}
-                <div onClick={() => setShowConfirm(true)}
-                  className="bottom-[70px] left-1/2 -translate-x-1/2 absolute">
-                  <button className="flex items-center gap-2 text-white font-bold py-1 px-4 rounded-full"
+
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Enter message..."
+                  className="w-full p-2 border rounded text-sm mb-3 min-h-[315px]"
+                />
+
+                <div
+                  onClick={handleSendClick}
+                  className="bottom-[20px] left-3/4 -translate-x-1/2 absolute"
+                >
+                  <button
+                    className="flex items-center gap-2 text-white font-bold py-1 px-4 rounded-full"
                     style={{
-                      background: "linear-gradient(to right, #5b0e2d, #a83279)",
+                      background:
+                        "linear-gradient(to right, #5b0e2d, #a83279)",
                       border: "2px solid gold",
                       boxShadow: "0px 2px 5px rgba(0,0,0,0.3)",
-                    }}>
-                    SEND
-                    <FaPaperPlane className="w-4 h-4" />
-                  </button>
-                </div>
-                {/* Back to search */}
-                <div className="absolute top-4 right-16">
-                  <button
-                    className="text-xs text-purple-700 underline"
-                    onClick={() => setSelectedUser(null)}
+                    }}
+                    disabled={loading}
                   >
-                    Back to search
+                    {loading ? "Sending..." : "SEND"}
+                    <FaPaperPlane className="w-4 h-4" />
                   </button>
                 </div>
               </>
@@ -164,6 +190,14 @@ export default function AccountStatementModal({ onClose }) {
           </div>
         </div>
       )}
+
+      {showUserSelectModal && (
+        <UserSelectModal
+          onClose={() => setShowUserSelectModal(false)}
+          onSubmit={handleUserSelectSubmit}
+        />
+      )}
+
       {showConfirm && (
         <ConfirmModal
           onYes={handleCloseAll}

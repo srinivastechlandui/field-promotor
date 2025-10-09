@@ -585,7 +585,7 @@ export default function UnverifiedPopup({ user = {}, onClose, image }) {
                                 ? "bg-[#FC0A0A] text-white font-bold opacity-50 cursor-not-allowed pointer-events-none" // ✅ Rejected (disabled)
                                 : (approvedCodes.includes(3) || user.status_code === 3)
                                     ? "bg-gray-500 text-white cursor-not-allowed pointer-events-none opacity-50" // ❌ Disabled (already approved)
-                                    : "bg-[#FC0A0A] text-white font-bold cursor-pointer cursor-not-allowed" // Active
+                                    : "bg-[#FC0A0A] text-white font-bold cursor-not-allowed" // Active
                             }`}
                     >
                         {rejectedCodes.includes(3) ? "REJECTED" : "REJECT"}

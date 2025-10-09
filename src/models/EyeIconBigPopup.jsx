@@ -1,22 +1,82 @@
 import React, { useState, useEffect } from "react";
 import { FaEye } from "react-icons/fa";
-import car from '../Assets/car.jpg'
+import car from "../Assets/car.jpg";
 import KeypadModal from "./KeypadModal";
 import ConfirmModal from "./ConfirmModal";
 import axios from "axios";
 import BankDetailsModal from "./BankDetailsModel";
-import BASE_URL from  '../utils/Urls';
-// import AccessModal from "./AccessModal";
-
+import AccessModal from "./AccessModal"
+import BASE_URL from "../utils/Urls";
+// const BASE_URL ="http://localhost:8080/api/v1"
 export default function EyeIconBigPopup({ onClose }) {
-
   const [showKeypad, setShowKeypad] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showMain, setShowMain] = useState(true);
   const [bankDetails, setBankDetails] = useState([]);
   const [selectedBank, setSelectedBank] = useState(null);
-   const SECONDARY_LOCK = process.env.SECONDARY_LOCK || "2580";
-  //  const [showAccess, setShowAccess] = useState(false);
+  const [stats, setStats] = useState({
+    unfilled: 0,
+    unverified: 0,
+    training: 0,
+    active: 0,
+    inactive: 0,
+    deactivate: 0,
+    total: 0,
+  });
+  const [showAccess, setShowAccess] = useState(false);
+
+  const SECONDARY_LOCK = process.env.SECONDARY_LOCK || "2580";
+
+  // ✅ Fetch users and compute stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await axios.get(`${BASE_URL}/users/`);
+        const allUsers = res.data?.users || [];
+
+        const counts = {
+          unfilled: allUsers.filter(
+            (u) => u.status_code === 0 && u.status === "unfilled"
+          ).length,
+
+          unverified: allUsers.filter(
+            (u) => u.status_code > 0 && u.status === "unfilled"
+          ).length,
+
+          training: allUsers.filter(
+            (u) =>
+              u.status === "unfilled" &&
+              u.status_code === 5 &&
+              u.rejected.length === 0 &&
+              Array.isArray(u.approved) &&
+              u.approved.length === 4
+             && u.token === null
+          ).length,
+
+          deactivate: allUsers.filter((u) => u.status_code === -1).length,
+
+          active: allUsers.filter((u) => u.status === "active").length,
+
+          inactive: allUsers.filter((u) => u.status === "inactive").length,
+
+          total: allUsers.length,
+
+          bankedTotal: allUsers.reduce((sum, u) => {
+           const val = parseFloat(u.bankedEarnings || 0);
+           return sum + (isNaN(val) ? 0 : val);
+          }, 0),
+
+        };
+
+        setStats(counts);
+      } catch (err) {
+        console.error("❌ Failed to fetch user stats", err);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   // ✅ Fetch bank details on mount
   useEffect(() => {
     const fetchBankDetails = async () => {
@@ -57,35 +117,35 @@ export default function EyeIconBigPopup({ onClose }) {
                   <div className="flex flex-col items-center mr-20 z-10">
                     <div className="flex items-center gap-4 w-20">
                       <span className="text-lg font-bold text-orange-500 min-w-[120px]">UNFILLED</span>
-                      <span className="text-lg font-bold text-orange-500">[###]</span>
+                      <span className="text-lg font-bold text-orange-500">[{stats.unfilled}]</span>
                     </div>
                     <div className="flex items-center gap-4 w-20">
                       <span className="text-lg font-bold text-[#A80C0F] min-w-[120px]">UNVERIFIED</span>
-                      <span className="text-lg font-bold text-[#A80C0F]">[###]</span>
+                      <span className="text-lg font-bold text-[#A80C0F]">[{stats.unverified}]</span>
                     </div>
                     <div className="flex items-center gap-4 w-20">
-                      <span className="text-lg font-bold text-[#B100AE] min-w-[120px]">PROCESSING</span>
-                      <span className="text-lg font-bold text-[#B100AE]">[###]</span>
+                      <span className="text-lg font-bold text-[#B100AE] min-w-[120px]">TRAINING</span>
+                      <span className="text-lg font-bold text-[#B100AE]">[{stats.training}]</span>
                     </div>
                   </div>
 
                   <div className="flex flex-col items-center mr-8 z-10">
                     <div className="flex items-center w-20">
                       <span className="text-lg font-bold text-[#6EDC54] min-w-[100px]">Active</span>
-                      <span className="text-lg font-bold text-[#6EDC54]">[###]</span>
+                      <span className="text-lg font-bold text-[#6EDC54]">[{stats.active}]</span>
                     </div>
                     <div className="flex items-center w-20">
                       <span className="text-lg font-bold text-[#F10000] min-w-[100px]">Inactive</span>
-                      <span className="text-lg font-bold text-[#F10000]">[###]</span>
+                      <span className="text-lg font-bold text-[#F10000]">[{stats.inactive}]</span>
                     </div>
                     <div className="flex items-center w-20">
                       <span className="text-lg font-bold text-[#A80C0F] min-w-[100px]">Deactivate</span>
-                      <span className="text-lg font-bold text-[#A80C0F]">[###]</span>
+                      <span className="text-lg font-bold text-[#A80C0F]">[{stats.deactivate}]</span>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-center min-w-[100px]">
-                    Total : [#]
+                    Total : [{stats.total}]
                   </div>
                 </div>
 
@@ -103,7 +163,7 @@ export default function EyeIconBigPopup({ onClose }) {
                 {/* Boxes */}
                 <div className="flex items-center justify-center">
                   <div className="w-[121px] h-[114px] border-2 border-green-500 text-green-500 rounded-md flex items-center justify-center z-10">
-                    <span className="font-bold text-sm">$$$$$$$$</span>
+                    <span className="font-bold text-sm">$${stats.bankedTotal}</span>
                   </div>
                 </div>
                 <div className="px-3 py-1 border-2 border-brown-700 text-brown-700 rounded-md text-center mx-1 z-10">
@@ -167,23 +227,26 @@ export default function EyeIconBigPopup({ onClose }) {
                 {bankDetails.length > 0 ? (
                   <span className="font-bold whitespace-nowrap">
                     <span className="text-[#A80C0F]">
-                      {bankDetails[0].company_account_no}
+                      {bankDetails[0].company_account_no},
                     </span>{" "}
-                    and {" "}
+                    {" "}
                     <span className="text-[#FF0505]">
                       {bankDetails[0].company_bank_name}
+                    </span>{" "} and {" "}
+                    <span className="text-blue-500">
+                      IFSC: {bankDetails[0].ifsc_code}
                     </span>
                   </span>
                 ) : (
                   <span className="text-gray-500">No Bank Details</span>
                 )}
               </div>
-              {/* <div
+              <div
                 onClick={() => setShowAccess(true)}
                 className="cursor-pointer border-4 border-green-500 rounded-2xl bg-white px-5 h-[40px] flex items-center justify-center -translate-x-[10px] translate-y-3"
               >
                 <span className="font-bold text-green-600">Access</span>
-              </div> */}
+              </div>
               {/* Due Section */}
               <div className="border-4 border-red-500 rounded-2xl bg-white px-5 h-[40px] flex items-center justify-center -translate-x-[20px] translate-y-3">
                 <span className="font-bold text-red-500 mr-2">DUE</span>
@@ -195,7 +258,7 @@ export default function EyeIconBigPopup({ onClose }) {
           </div>
         </div>
       )}
-      {/* {showAccess && <AccessModal onClose={() => setShowAccess(false)} />} */}
+      {showAccess && <AccessModal onClose={() => setShowAccess(false)} />}
       {selectedBank && (
         <BankDetailsModal
           bank={selectedBank}
@@ -210,7 +273,7 @@ export default function EyeIconBigPopup({ onClose }) {
       )}
       {showKeypad && (
         <KeypadModal
-          lockCode={SECONDARY_LOCK}  
+          lockCode={SECONDARY_LOCK}
           onGoClick={() => {
             setShowConfirm(true);
             setShowKeypad(false);

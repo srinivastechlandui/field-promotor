@@ -1,15 +1,18 @@
 import React, { useState } from "react";
 import axios from "axios";
 import BASE_URL from "../utils/Urls";
-import KeypadModal from "./KeypadModal";   
+import KeypadModal from "./KeypadModal";  
 
 export default function BankDetailsModal({ bank, onClose, onUpdated }) {
+  // const BASE_URL ="http://localhost:8080/api/v1"
   const [accountNo, setAccountNo] = useState(bank.company_account_no || "");
   const [bankName, setBankName] = useState(bank.company_bank_name || "");
+  const [ifscCode, setIfscCode] = useState(bank.ifsc_code || ""); // ✅ Add state for ifsc_code
   const [loading, setLoading] = useState(false);
 
-  const [showKeypad, setShowKeypad] = useState(false); 
-  const SECONDARY_LOCK = process.env.SECONDARY_LOCK || "2580"; 
+  const [showKeypad, setShowKeypad] = useState(false);  
+  const SECONDARY_LOCK = process.env.SECONDARY_LOCK || "2580";  
+
   // Validations
   const validateInputs = () => {
     if (!accountNo.trim()) {
@@ -28,12 +31,21 @@ export default function BankDetailsModal({ bank, onClose, onUpdated }) {
       alert("⚠️ Bank Name must be at least 4 characters long");
       return false;
     }
+    // ✅ Add validation for IFSC code
+    if (!ifscCode.trim()) {
+      alert("⚠️ IFSC Code is required");
+      return false;
+    }
+    if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifscCode)) {
+      alert("⚠️ Invalid IFSC code format. It should be 11 characters (e.g., ABCD0123456)");
+      return false;
+    }
     return true;
   };
 
   const handleUpdate = () => {
     if (!validateInputs()) return;
-    setShowKeypad(true);   
+    setShowKeypad(true);  
   };
 
   const doUpdate = async () => {
@@ -42,6 +54,7 @@ export default function BankDetailsModal({ bank, onClose, onUpdated }) {
       const res = await axios.put(`${BASE_URL}/admin/bank-details/${bank.id}`, {
         company_account_no: accountNo,
         company_bank_name: bankName,
+        ifsc_code: ifscCode, // ✅ Include ifsc_code in the request body
       });
 
       alert(res.data.message || "✅ Updated successfully");
@@ -88,6 +101,20 @@ export default function BankDetailsModal({ bank, onClose, onUpdated }) {
               className="w-full border rounded px-3 py-2"
             />
           </div>
+          
+          {/* ✅ Add new input field for IFSC Code */}
+          <div className="mb-4">
+            <label className="block text-sm font-semibold mb-1">
+              IFSC Code
+            </label>
+            <input
+              type="text"
+              value={ifscCode}
+              onChange={(e) => setIfscCode(e.target.value.toUpperCase())}
+              className="w-full border rounded px-3 py-2"
+              maxLength={11}
+            />
+          </div>
 
           <div className="flex justify-end gap-2">
             <button
@@ -113,10 +140,10 @@ export default function BankDetailsModal({ bank, onClose, onUpdated }) {
           lockCode={SECONDARY_LOCK}
           onGoClick={() => {
             setShowKeypad(false);
-            doUpdate();  // only run update if PIN correct
+            doUpdate();
           }}
           onClose={() => setShowKeypad(false)}
-          onWrongPin={() => alert("❌ Wrong PIN")}   // optional hook if you want explicit wrong pin handling
+          onWrongPin={() => alert("❌ Wrong PIN")} 
         />
       )}
     </>

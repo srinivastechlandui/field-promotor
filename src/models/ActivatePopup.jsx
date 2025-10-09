@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { FaBars, FaCamera, FaCaretDown, FaCaretUp, FaComments, FaEdit , FaTrash, FaPhoneAlt, FaPlusCircle, FaToggleOff, FaToggleOn } from "react-icons/fa";
+import { FaBars, FaCamera, FaCaretDown, FaCaretUp, FaCheck, FaComments, FaEdit ,FaSave, FaTimes,  FaTrash, FaPhoneAlt, FaPlusCircle, FaToggleOff, FaToggleOn, FaLock, FaLockOpen } from "react-icons/fa";
 import selfi from '../Assets/selfi.png';
 import activeimg from '../Assets/active-img.png';
 import camera from '../Assets/camera.png'
@@ -13,6 +13,9 @@ import Accountstmt from '../Assets/Account-stmt.png'
 import blue from '../Assets/purple-blue.png'
 import BASE_URL from '../utils/Urls';
 import ImageModal from "./ImageModal";
+import KeypadModal from "./KeypadModal";
+
+const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "5094";
 
 const ActivatePopup = ({ user, onClose, image }) => {
 //   const BASE_URL = `http://localhost:8080/api/v1`
@@ -43,6 +46,65 @@ const ActivatePopup = ({ user, onClose, image }) => {
     const [notifications, setNotifications] = useState([]);
     const [filter, setFilter] = useState("all"); 
     const [deactivated, setDeactivated] = useState(false);
+    const [steps, setSteps] = useState([]);
+
+    const [isEditing, setIsEditing] = useState(false);
+    const [editData, setEditData] = useState({
+    email: user?.email || "",
+    employer_name: user?.employer_name || user?.name || "",
+    phone_number: user?.phone_number || "",
+    aadhar_no: user?.aadhar_no || "",
+    pan_card_number: user?.pan_card_number || "",
+    ifsc_code: user?.ifsc_code || "",
+    bank_account_no: user?.bank_account_no || "",
+    nominee_name: user?.nominee_name || "",
+    nominee_phone_no: user?.nominee_phone_no || "",
+    });
+
+    const handleChange = (e) => {
+    setEditData({ ...editData, [e.target.name]: e.target.value });
+    };
+
+    const handleSave = async () => {
+    try {
+        const res = await axios.put(
+        `${BASE_URL}/users/admin/update/${user.user_id}`,
+        editData
+        );
+        alert(res.data.message);
+        setIsEditing(false);
+    } catch (err) {
+        alert("❌ Failed: " + (err.response?.data?.message || err.message));
+    }
+    };
+
+
+
+   useEffect(() => {
+        const fetchProgress = async () => {
+            try {
+            const res = await axios.get(`${BASE_URL}/progress/${user.user_id}`);
+
+            // Adjust here based on actual API shape
+            const data = res.data?.targets || res.data;
+
+            const amounts = data?.amounts || [];
+            const accounts = data?.accounts || [];
+
+            const combined = amounts.map((top, i) => ({
+                top,
+                bottom: accounts[i] || "",
+            }));
+
+            setSteps(combined);
+            } catch (err) {
+            console.error("❌ Failed to fetch progress", err);
+            } finally {
+            setLoading(false);
+            }
+        };
+        if (user.user_id) fetchProgress();
+    }, [user.user_id]);
 
   useEffect(() => {
   if (!user.user_id) return;
@@ -203,6 +265,7 @@ const ActivatePopup = ({ user, onClose, image }) => {
     };
 
     
+    
       useEffect(() => {
         if (user?.status_code === -1) {
             setDeactivated(true);
@@ -234,6 +297,47 @@ const ActivatePopup = ({ user, onClose, image }) => {
                 setLoading(false);
             }
         };
+
+    // Add missing state and handlers for bank account lock
+    const [isBankAccountLocked, setIsBankAccountLocked] = useState(true);
+    const [showBankLockModal, setShowBankLockModal] = useState(false);
+    const [isEditingBankAccount, setIsEditingBankAccount] = useState(false);
+
+    const handleUnlockBankAccount = () => {
+        setShowBankLockModal(true);
+    };
+
+    const handleBankAccountUnlockSuccess = () => {
+        setIsBankAccountLocked(false);
+        setShowBankLockModal(false);
+    };
+
+    const handleBankLockModalClose = () => {
+        setShowBankLockModal(false);
+    };
+
+    const handleBankAccountEditToggle = () => {
+        if (isBankAccountLocked) {
+            handleUnlockBankAccount();
+        } else {
+            setIsEditingBankAccount((prev) => !prev);
+        }
+    };
+
+    const handleBankAccountSave = async () => {
+        try {
+            const res = await axios.put(
+                `${BASE_URL}/users/admin/update/${user.user_id}`,
+                { bank_account_no: editData.bank_account_no }
+            );
+            alert(res.data.message || "Bank account updated successfully!");
+            setIsEditingBankAccount(false);
+        } catch (err) {
+            alert("❌ Failed to update bank account: " + (err.response?.data?.message || err.message));
+        }
+    };
+
+
 
     return (
         <div
@@ -306,13 +410,7 @@ const ActivatePopup = ({ user, onClose, image }) => {
                             >
                                 {approvedCodes.includes(1) ? "ACCEPTED" : "ACCEPT"}
                             </div>
-                            {/* <button
-                            className="w-[64px] h-[24px] flex items-center justify-center bg-[#FF0E12] text-white rounded-lg text-xs font-bold hover:bg-red-700 transition"
-                            disabled={loading}
-                            onClick={() => handleReject(1)}
-                            >
-                            Reject
-                            </button> */}
+                            
                             <div
                                 onClick={() => {
                                     if (!rejectedCodes.includes(1) && !approvedCodes.includes(1)) {
@@ -497,7 +595,7 @@ const ActivatePopup = ({ user, onClose, image }) => {
                         )}
                         <div className="w-full text-[1xl] mb-1 tracking-tight text-black mt-2 text-center">Valid between</div>
                         <div className="w-[180px] text-[1xl] mb-1 tracking-tight text-black mt-2 text-center"> {user.valid_date} to {user.expired_date}</div>
-                        <div className="w-full mt-1 justify-center">
+                        <div className="w-full mt-1">
                             {/* <div className="text-sm font-semibold mb-1">Banked earnings</div> */}
                             {/* <div
                                 className="w-[92px] h-[15px] bg-cover bg-center flex flex-row gap-2 items-center justify-center rounded-lg"
@@ -509,7 +607,7 @@ const ActivatePopup = ({ user, onClose, image }) => {
                                     />
                                 ))}
                             </div> */}
-                            <div
+                            {/* <div
                                 className="flex  items-center bg-white rounded-lg border border-red-200 px-3 py-2 shadow-md w-[136px] h-[63px] relative my-2">
                                 <div className=" absolute text-xs text-gray-600 font-medium mb-[47px]">Amount</div>
                                 <div className="flex items-center w-full relative justify-between">
@@ -554,6 +652,49 @@ const ActivatePopup = ({ user, onClose, image }) => {
                                     </div>
                                 </div>
                                 <div className=" absolute text-xs text-gray-600 font-medium mt-[47px]">Accounts</div>
+                            </div> */}
+                            <div className="flex items-center bg-white rounded-lg border border-red-200 px-3 py-2 shadow-md w-[156px] h-[110px] relative my-2">
+                                    {/* Labels */}
+                                    <div className="absolute text-xs text-gray-600 font-medium mb-20">
+                                        Amount
+                                    </div>
+                                    {/* <div className="absolute text-xs text-gray-600 font-medium mt-[47px]">
+                                        Accounts
+                                    </div> */}
+
+                                    {/* Tracker line */}
+                                    <div className="flex items-center w-full relative justify-between mt-3">
+                                        <div
+                                        className="absolute h-[2px] bg-green-500 top-1/2 -translate-y-1/2"
+                                        style={{ left: "16px", right: "24px" }}
+                                        ></div>
+
+                                        {/* Steps */}
+                                        {steps.map((step, index) => (
+                                        <div key={index} className="flex flex-col items-center z-10">
+                                            {/* Top value */}
+                                            <span className="text-xs font-bold text-black">{step.top}</span>
+
+                                            {/* Circle */}
+                                            <div
+                                            className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
+                                                index < 2
+                                                ? "bg-green-500 text-white"
+                                                : "border-2 border-gray-300 bg-white"
+                                            }`}
+                                            >
+                                            {index < 2 && <FaCheck />}
+                                            </div>
+
+                                            {/* Bottom value */}
+                                            <span className="text-xs text-gray-600">{step.bottom}</span>
+                                        </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="absolute bottom-2 left-3 text-xs text-gray-600 font-medium">
+                                        Accounts
+                                    </div>
                             </div>
 
                         </div>
@@ -631,33 +772,122 @@ const ActivatePopup = ({ user, onClose, image }) => {
             </div>
             {/* Third Section */}
             <div className="flex items-center justify-between gap-10 mb-5">
-                {/* card1 */}
-                <div
-                    className="w-[218px] h-[468px] bg-cover bg-center flex flex-col items-center px-4 py-2 rounded-lg"
-                    style={{ backgroundImage: `url(${viewAccount})` }}>
-                    <div className="flex items-center gap-5 mb-5">
-                        <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-[#3a1e0b] font-bold">👤</div>
-                        <h2 className="text-xs font-bold text-white">View Account</h2>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="block text-white text-[7px] ">EMAIL.</label>
-                        <input type="text" value={email} placeholder="EMAIL" className="w-full px-4 py-1 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
-                        <label className="block text-white text-[7px] ">AADHAR NO.</label>
-                        <input type="text" value={aadhar} placeholder="AADHAR NO." className="w-full px-4 py-1 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
-                        <label className="block text-white text-[7px] ">EMPLOYER NAME.</label>
-                        <input type="text" value={employerName} placeholder="EMPLOYER NAME" className="w-full px-4 py-1 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
-                        <label className="block text-white text-[7px]">PAN CARD.</label>
-                        <input type="text" value={pan} placeholder="PAN CARD" className="w-full px-4 py-1 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
-                        <label className="block text-white text-[7px]">IFSC CODE.</label>
-                        <input type="text" value={ifsc} placeholder="IFSC CODE" className="w-full px-4 py-1 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
-                        <label className="block text-white text-[7px]">BANK ACCOUNT.</label>
-                        <input type="text" value={bank_account_no} placeholder="BANK ACCOUNT" className="w-full px-4 py-1 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
-                        <label className="block text-white text-[7px]">NOMINEE NAME.</label>
-                        <input type="text" value={nomineeName} placeholder="NOMINEE NAME" className="w-full px-4 py-1 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
-                        <label className="block text-white text-[7px] ">NOMINEE PH NO.</label>
-                        <input type="text" value={nomineePhone} placeholder="NOMINEE Ph NO." className="w-full px-4 py-1 text-xs border border-white bg-transparent rounded-lg text-white outline-none placeholder-white/80" readOnly />
-                    </div>
-                </div>
+                  {/* card1 - View Account */}
+                            <div
+                            className="w-[218px] h-[468px] bg-cover bg-center flex flex-col items-center px-4 py-2 rounded-lg"
+                            style={{ backgroundImage: `url(${viewAccount})` }}
+                            >
+                            {/* Header with Edit / Save / Cancel */}
+                            <div className="flex justify-between items-center w-full mb-5">
+                                <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-[#3a1e0b] font-bold">
+                                    👤
+                                </div>
+                                <h2 className="text-xs font-bold text-white">View Account</h2>
+                                </div>
+                                <div className="flex gap-2">
+                                {isEditing ? (
+                                    <>
+                                    <button
+                                        onClick={handleSave}
+                                        className="text-green-500 hover:text-green-700"
+                                    >
+                                        <FaSave />
+                                    </button>
+                                    <button
+                                        onClick={() => setIsEditing(false)}
+                                        className="text-red-500 hover:text-red-700"
+                                    >
+                                        <FaTimes />
+                                    </button>
+                                    </>
+                                ) : (
+                                    <button
+                                    onClick={() => setIsEditing(true)}
+                                    className="text-blue-400 hover:text-blue-600"
+                                    >
+                                    <FaEdit />
+                                    </button>
+                                )}
+                                </div>
+                            </div>
+
+                            {/* Input fields */}
+                            <div className="space-y-2 w-full">
+                                {/* All fields except BANK ACCOUNT */}
+                                {[
+                                { label: "EMAIL", name: "email", value: email },
+                                { label: "AADHAR NO.", name: "aadhar_no", value: aadhar },
+                                { label: "EMPLOYER NAME", name: "employer_name", value: employerName },
+                                { label: "PHONE", name: "phone_number", value: user?.phone_number || "" },
+                                { label: "PAN CARD", name: "pan_card_number", value: pan },
+                                { label: "IFSC CODE", name: "ifsc_code", value: ifsc },
+                                { label: "NOMINEE NAME", name: "nominee_name", value: nomineeName },
+                                { label: "NOMINEE PH NO.", name: "nominee_phone_no", value: nomineePhone },
+                                ].map((field) => (
+                                <div key={field.name}>
+                                    <label className="block text-white text-[7px]">{field.label}</label>
+                                    <input
+                                    type="text"
+                                    name={field.name}
+                                    value={editData[field.name]}
+                                    onChange={handleChange}
+                                    className={`w-full px-4 py-1 text-xs border rounded-lg outline-none
+                                        ${
+                                        isEditing
+                                            ? "border-yellow-400 bg-white text-black"
+                                            : "border-white bg-transparent text-white"
+                                        }`}
+                                    readOnly={!isEditing}
+                                    />
+                                </div>
+                                ))}
+                                {/* BANK ACCOUNT field (separate with edit/save icon) */}
+                                <div className="relative">
+                                  <label className="text-white text-[7px] flex items-center">
+                                    BANK ACCOUNT NUMBER
+                                    {isBankAccountLocked ? (
+                                      <FaLock
+                                        className="ml-2 text-yellow-400 cursor-pointer"
+                                        title="Unlock to edit"
+                                        onClick={handleUnlockBankAccount}
+                                      />
+                                    ) : (
+                                      <FaLockOpen className="ml-2 text-green-500" title="Unlocked" />
+                                    )}
+                                  </label>
+                                  <input
+                                    type="text"
+                                    name="bank_account_no"
+                                    value={editData["bank_account_no"]}
+                                    onChange={handleChange}
+                                    className={`w-full px-4 py-1 text-xs border rounded-lg outline-none pr-10
+                                      ${
+                                        isEditingBankAccount
+                                          ? "border-yellow-400 bg-white text-black"
+                                          : "border-white bg-transparent text-white"
+                                      }`}
+                                    readOnly={!isEditingBankAccount}
+                                  />
+                                  <button
+                                    className="absolute top-3/4 right-2 transform -translate-y-3/4 text-blue-500"
+                                    onClick={isEditingBankAccount ? handleBankAccountSave : handleBankAccountEditToggle}
+                                  >
+                                    {isEditingBankAccount ? <FaSave /> : <FaEdit />}
+                                  </button>
+                                </div>
+                            </div>
+                            {/* Keypad Modal for Bank Account Lock */}
+                            {showBankLockModal && (
+                              <KeypadModal
+                                lockCode={PRIMARY_LOCK}
+                                onGoClick={handleBankAccountUnlockSuccess}
+                                onClose={handleBankLockModalClose}
+                              />
+                            )}
+                            </div>
+
+
                 {/* card2 */}
                 <div
                     className="w-[179px] h-[340px] bg-cover bg-center flex flex-col items-center px-4 py-2 rounded-lg"
@@ -670,14 +900,14 @@ const ActivatePopup = ({ user, onClose, image }) => {
                         <span className="text-semibold text-[8px]">All</span>
                         <span className="text-semibold text-[8px]">Paid</span>
                         <span className="text-semibold text-[8px]">Pending</span>
-                        {/* <span className="text-semibold text-[8px]">live run</span> */}
+                        <span className="text-semibold text-[8px]">Live Run</span>
                     </div>
                     {/* Transaction Payment Row */}
-                    <div className="flex flex-col w-[139px] space-y-2 mb-2">
-                        <div className="flex flex-col bg-green-50 border border-green-300 rounded px-2 py-1 text-[10px] font-semibold">
+                    <div className="flex flex-col w-[141px] space-y-2 mb-2">
+                        <div className="flex flex-col bg-red-50 border border-red-300 rounded px-2 py-1 text-[10px] font-semibold">
                             <div className="flex items-center justify-between">
-                                <span className="text-green-700">Transaction Payment</span>
-                                <span className="text-green-900">₹{user.onboarding_fee || 0}</span>
+                                <span className="text-red-700">Transaction Payment</span>
+                                <span className="text-red-900">₹-{user.onboarding_fee || 0}</span>
                             </div>
                             {user.transaction_id && (
                                 <div className="flex items-center justify-end mt-1">

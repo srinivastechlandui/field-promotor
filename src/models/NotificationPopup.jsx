@@ -1,81 +1,45 @@
 import React, { useState, useEffect } from "react";
 import { IoClose } from "react-icons/io5";
-import { FaPaperPlane } from "react-icons/fa";
+import { FaPaperPlane, FaUserPlus } from "react-icons/fa"; // Added FaUserPlus icon
 import axios from "axios";
 import ConfirmModal from "./ConfirmModal";
+import UserSelectModal from "./UserSelectModal"; // Import the UserSelectModal
 import BASE_URL from "../utils/Urls";
 
 export default function NotificationPopup({ onClose }) {
   const [showMain, setShowMain] = useState(true);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showUserSelectModal, setShowUserSelectModal] = useState(false); // New state to control modal visibility
   const [message, setMessage] = useState("");
-  const [users, setUsers] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const emptyLines = 4;
 
-  const [searchTerm, setSearchTerm] = useState(""); // ✅ search bar state
-  const emptyLines = 6;
-
-  // ✅ Fetch users
-  useEffect(() => {
-    const fetchUsers = async () => {
-      setLoading(true);
-      try {
-        const { data } = await axios.get(`${BASE_URL}/users/`);
-        if (data?.users) setUsers(data.users);
-      } catch (err) {
-        console.error("❌ Failed to fetch users", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUsers();
-  }, [showMain]);
-
-  // ✅ Toggle select individual user
-  const handleUserSelect = (user_id) => {
-    setSelectedUsers((prev) =>
-      prev.includes(user_id)
-        ? prev.filter((id) => id !== user_id)
-        : [...prev, user_id]
-    );
+  // Function to handle opening the user selection modal
+  const handleOpenUserSelect = () => {
+    setShowUserSelectModal(true);
   };
 
-  // ✅ Select/unselect all users (filtered list only)
-  const handleCheckAll = () => {
-    const filteredIds = filteredUsers.map((u) => u.user_id);
-    const allSelected = filteredIds.every((id) => selectedUsers.includes(id));
-
-    setSelectedUsers(
-      allSelected
-        ? selectedUsers.filter((id) => !filteredIds.includes(id)) // unselect only filtered
-        : [...new Set([...selectedUsers, ...filteredIds])] // select all filtered
-    );
+  // Function to handle the users submitted from the modal
+  const handleUserSelection = (users) => {
+    setSelectedUsers(users); // Set the selected users from the modal
+    setShowUserSelectModal(false); // Close the modal
   };
 
-  // ✅ Derived filtered users
-  const filteredUsers = users.filter((user) => {
-  const name = user?.employer_name ?? ""; // fallback empty string
-  const id = String(user?.user_id ?? "");
-  return (
-    name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    id.includes(searchTerm)
-  );
-  });
-
-  
-
-  // ✅ Send notification API
+  // Send notification API
   const handleSendNotification = async () => {
     if (!message.trim()) {
       alert("⚠️ Please enter a notification message");
       return;
     }
-
+    if (selectedUsers.length === 0) {
+    alert("⚠️ Please select at least one user to send the notification messages.");
+    return;
+  }
+    setLoading(true);
     const payload = {
       message,
-      ...(selectedUsers.length > 0 && { user_ids: selectedUsers }),
+      user_ids: selectedUsers,
     };
 
     try {
@@ -89,11 +53,13 @@ export default function NotificationPopup({ onClose }) {
         );
         setMessage("");
         setSelectedUsers([]);
-        setShowConfirm(true);
       }
     } catch (error) {
       console.error("❌ Failed to send notification", error);
       alert("❌ Failed to send notification");
+    } finally {
+      setLoading(false);
+      setShowConfirm(true); // Always show confirmation after an attempt
     }
   };
 
@@ -137,65 +103,28 @@ export default function NotificationPopup({ onClose }) {
               placeholder="Type your notification message here..."
             />
 
-            {/* ✅ Search bar */}
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="mb-2 p-2 rounded border border-gray-400 w-full"
-              placeholder="🔍 Search users by ID or name..."
-            />
+            {/* Select Users Button */}
+            {/* <div className="flex justify-center align-left mb-4">
+              <button
+                onClick={handleOpenUserSelect}
+                className="flex items-center gap-2 text-white font-bold py-2 px-4 rounded-full"
+                style={{
+                  background: "linear-gradient(to right, #5b0e2d, #a83279)",
+                  border: "2px solid gold",
+                  boxShadow: "0px 2px 5px rgba(0,0,0,0.3)",
+                }}
+              >
+                <FaUserPlus /> Select Users ({selectedUsers.length})
+              </button>
+            </div> */}
 
-            {/* User List */}
-            <div className="overflow-y-auto max-h-40 border rounded p-2 bg-white">
-              <label className="block font-bold mb-2">Send To:</label>
-
-              {loading ? (
-                <p className="text-sm text-purple-600 font-semibold">
-                  ⏳ Loading users...
-                </p>
-              ) : filteredUsers.length === 0 ? (
-                <p className="text-sm text-gray-600">No matching users</p>
-              ) : (
-                <>
-                  <label className="flex items-center gap-2 mb-2 font-semibold text-purple-700">
-                    <input
-                      type="checkbox"
-                      checked={
-                        filteredUsers.length > 0 &&
-                        filteredUsers.every((u) =>
-                          selectedUsers.includes(u.user_id)
-                        )
-                      }
-                      onChange={handleCheckAll}
-                    />
-                    <span>Check All (Filtered)</span>
-                  </label>
-
-                  {filteredUsers.map((user) => (
-                    <label
-                      key={user.user_id}
-                      className="flex items-center gap-2 mb-1 ml-3"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedUsers.includes(user.user_id)}
-                        onChange={() => handleUserSelect(user.user_id)}
-                      />
-                      <span>{`User #${user.user_id} - ${user.employer_name}`}</span>
-                    </label>
-                  ))}
-                </>
-              )}
-            </div>
-
-            {/* Empty lines */}
+            {/* Empty lines (for visual spacing) */}
             {Array.from({ length: emptyLines }).map((_, idx) => (
-              <div key={idx} className="border-b-4 border-white my-1"></div>
+              <div key={idx} className="absolute border-b-4 border-white my-2"></div>
             ))}
 
             {/* Send button */}
-            <div className="absolute bottom-[60px] left-1/2 -translate-x-1/2">
+            {/* <div className="absolute bottom-[60px] left-3/4 -translate-x-1/2">
               <button
                 onClick={handleSendNotification}
                 disabled={loading}
@@ -206,12 +135,50 @@ export default function NotificationPopup({ onClose }) {
                   boxShadow: "0px 2px 5px rgba(0,0,0,0.3)",
                 }}
               >
-                {loading ? "Loading..." : "SEND"}
+                {loading ? "Sending..." : "SEND"}
                 {!loading && <FaPaperPlane className="w-4 h-4" />}
               </button>
+            </div> */}
+
+              <div className="flex justify-between items-center mb-4">
+              {/* Select Users Button (on the left) */}
+              <button
+                onClick={handleOpenUserSelect}
+                className="flex items-center gap-2 text-white font-bold py-2 px-4 rounded-full"
+                style={{
+                  background: "linear-gradient(to right, #5b0e2d, #a83279)",
+                  border: "2px solid gold",
+                  boxShadow: "0px 2px 5px rgba(0,0,0,0.3)",
+                }}
+              >
+                <FaUserPlus /> Select Users ({selectedUsers.length})
+              </button>
+
+              {/* Send Button (on the right) */}
+              <button
+                onClick={handleSendNotification}
+                disabled={loading}
+                className="flex items-center gap-2 text-white font-bold py-1 px-4 rounded-full disabled:opacity-50"
+                style={{
+                  background: "linear-gradient(to right, #5b0e2d, #a83279)",
+                  border: "2px solid gold",
+                  boxShadow: "0px 2px 5px rgba(0,0,0,0.3)",
+                }}
+              >
+                {loading ? "Sending..." : "SEND"}
+                {!loading && <FaPaperPlane className="w-5 h-5" />}
+              </button>
             </div>
+
           </div>
         </div>
+      )}
+
+      {showUserSelectModal && (
+        <UserSelectModal
+          onClose={() => setShowUserSelectModal(false)}
+          onSubmit={handleUserSelection}
+        />
       )}
 
       {showConfirm && (
