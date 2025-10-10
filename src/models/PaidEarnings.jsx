@@ -11,7 +11,10 @@ export default function PaidEarnings({ onClose, selectedUser }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [showUserSelect, setShowUserSelect] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState([]);
-  const [message, setMessage] = useState("");
+  // const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(
+  "Hello, your paid earnings of ₹500 have been successfully processed. Thank you!"
+);
   const [loading, setLoading] = useState(false);
 
   const AMOUNT = 500; // const value
@@ -108,7 +111,8 @@ export default function PaidEarnings({ onClose, selectedUser }) {
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Enter message... (use 500, it will be replaced with const value)"
+              // placeholder="Enter message... (use 500, it will be replaced with const value)"
+              placeholder={message}
               className="w-full p-2 border rounded text-sm mb-3 min-h-[315px]"
             />
 

@@ -8,12 +8,14 @@ import BankDetailsModal from "./BankDetailsModel";
 import AccessModal from "./AccessModal"
 import BASE_URL from "../utils/Urls";
 // const BASE_URL ="http://localhost:8080/api/v1"
-export default function EyeIconBigPopup({ onClose }) {
+export default function EyeIconBigPopup({user, onClose }) {
+  console.log("usersticket",user)
   const [showKeypad, setShowKeypad] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showMain, setShowMain] = useState(true);
   const [bankDetails, setBankDetails] = useState([]);
   const [selectedBank, setSelectedBank] = useState(null);
+  // Accept editedAccountsCount and editedAccountsBankedEarnings from props
   const [stats, setStats] = useState({
     unfilled: 0,
     unverified: 0,
@@ -23,6 +25,12 @@ export default function EyeIconBigPopup({ onClose }) {
     deactivate: 0,
     total: 0,
   });
+
+  // Props for edited accounts
+  // Accept todayTotals from props for today's banked earnings accounts
+  const editedBankedEarningsCount = user?.todayBankedEarningsCount ?? 0;
+  const editedPaidEarningsCount = user?.todayPaidEarningsCount ?? 0;
+  // const editedPaymentDueCount = user?.todayPaymentDueCount ?? 0;
   const [showAccess, setShowAccess] = useState(false);
 
   const SECONDARY_LOCK = process.env.SECONDARY_LOCK || "2580";
@@ -33,6 +41,36 @@ export default function EyeIconBigPopup({ onClose }) {
       try {
         const res = await axios.get(`${BASE_URL}/users/`);
         const allUsers = res.data?.users || [];
+
+        // Calculate totals before using them in the stats object
+        const totalLivePayoutBill = allUsers.reduce((sum, u) => {
+          const val = parseFloat(u.livePayoutBills || 0);
+          return sum + (isNaN(val) ? 0 : val);
+        }, 0);
+        const totalBankEarnings = allUsers.reduce((sum, u) => {
+          const val = parseFloat(u.bankedEarnings || 0);
+          return sum + (isNaN(val) ? 0 : val);
+        }, 0);
+        // const totalPaidEarnings = allUsers.reduce((sum, u) => {
+        //   const val = parseFloat(u.paidEarnings || 0);
+        //   return sum + (isNaN(val) ? 0 : val);
+        // }, 0);
+
+        const totalPaymentDue = allUsers.reduce((sum, u) => {
+          const val = parseFloat(u.paymentDue || 0);
+          return sum + (isNaN(val) ? 0 : val);
+        }, 0);
+
+        // Fetch total tickets and user count from backend
+        let totalTickets = 0;
+        let totalTicketUsers = 0;
+        try {
+          const ticketRes = await axios.get(`${BASE_URL}/tickets/count/all`);
+          totalTickets = ticketRes.data.total_tickets || 0;
+          totalTicketUsers = ticketRes.data.total_users || 0;
+        } catch (err) {
+          console.error("❌ Failed to fetch total tickets count", err);
+        }
 
         const counts = {
           unfilled: allUsers.filter(
@@ -60,12 +98,21 @@ export default function EyeIconBigPopup({ onClose }) {
           inactive: allUsers.filter((u) => u.status === "inactive").length,
 
           total: allUsers.length,
+          totalBankEarnings: totalBankEarnings,
+          totalLivePayoutBill: totalLivePayoutBill,
+          totalPaymentDue: totalPaymentDue,
+          totalDue: totalLivePayoutBill + totalPaymentDue,
 
           bankedTotal: allUsers.reduce((sum, u) => {
-           const val = parseFloat(u.bankedEarnings || 0);
-           return sum + (isNaN(val) ? 0 : val);
+            const val = parseFloat(u.bankedEarnings || 0);
+            return sum + (isNaN(val) ? 0 : val);
           }, 0),
-
+          paidEarnings: allUsers.reduce((sum, u) => {
+            const val = parseFloat(u.paidEarnings || 0);
+            return sum + (isNaN(val) ? 0 : val);
+          }, 0),
+          totalTickets: totalTickets,
+          totalTicketUsers: totalTicketUsers,
         };
 
         setStats(counts);
@@ -151,11 +198,11 @@ export default function EyeIconBigPopup({ onClose }) {
 
                 <div className="flex flex-col z-10 min-w-[100px]">
                   <div className="mb-1">
-                    <span className="text-lg font-bold text-purple-700">$$$$</span>
+                    <span className="text-lg font-bold text-purple-700">${stats.bankedTotal}</span>
                   </div>
                   <div>
                     <span className="text-xs font-bold text-purple-700">
-                      NO.OF Edited Accounts [#]
+                      NO.OF Edited Accounts [{editedBankedEarningsCount}]
                     </span>
                   </div>
                 </div>
@@ -163,13 +210,14 @@ export default function EyeIconBigPopup({ onClose }) {
                 {/* Boxes */}
                 <div className="flex items-center justify-center">
                   <div className="w-[121px] h-[114px] border-2 border-green-500 text-green-500 rounded-md flex items-center justify-center z-10">
-                    <span className="font-bold text-sm">$${stats.bankedTotal}</span>
+                    <span className="font-bold text-sm">$${stats.paidEarnings}</span>
                   </div>
                 </div>
                 <div className="px-3 py-1 border-2 border-brown-700 text-brown-700 rounded-md text-center mx-1 z-10">
                   <span className="text-xs block">...</span>
-                  <span className="font-bold text-sm block">$$$$</span>
-                  <span className="text-xs block">NO.OF Edited Accounts [#]</span>
+                  <span className="font-bold text-sm block text-[#A80C0F]">${stats.totalLivePayoutBill}</span>
+                  <span className="text-xs block text-[#A80C0F]">NO.OF Edited Accounts [{editedPaidEarningsCount}]</span>
+                  {/* <span className="text-xs block">NO.OF Edited payment due Accounts [{editedPaymentDueCount}]</span> */}
                 </div>
                 <div className="relative w-[380px] h-[120px] border-2 border-gray-300 rounded overflow-hidden flex-shrink-0">
                   <div
@@ -182,27 +230,28 @@ export default function EyeIconBigPopup({ onClose }) {
                     <div className="flex w-full justify-between z-10 mx-5">
                       <div className="flex flex-col items-start">
                         <span className="text-xs text-white font-medium">Accounts</span>
-                        <span className="text-lg text-white font-bold">50K</span>
-                        <span className="text-lg text-[#B100AE] font-bold">000</span>
+                        {/* <span className="text-lg text-white font-bold">50K</span> */}
+                        {/* <span className="text-lg text-[#B100AE] font-bold">000</span> */}
                       </div>
-                      <div className="text-lg font-bold text-orange-500">[#]</div>
-                      <div className="text-lg font-bold text-[#A80C0F]">[#]</div>
+                      {/* <div className="text-lg font-bold text-orange-500">[#]</div> */}
+                      {/* <div className="text-lg font-bold text-[#A80C0F]">[#]</div> */}
                       <div className="border-2 border-red-500 bg-white bg-opacity-90 p-2 rounded text-black text-center font-bold">
                         <span className="block">#</span>
-                        <span className="text-red-500 block">$$$$$$$$</span>
-                        <span className="text-xs block">NO.OF Edited Accounts [#]</span>
+                        <span className="text-red-500 block">$${stats.totalPaymentDue}</span>
+                        <span className="text-xs block">NO.OF Edited payment due Accounts [{editedBankedEarningsCount}]</span>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div>000</div>
+                {/* ticket count */}
+                <div>{" "}{stats.totalTickets !== undefined ? stats.totalTickets : "Loading..."}{" "}</div>
               </div>
             </div>
 
             {/* Bottom Bar */}
             <div className="flex justify-between items-center -mt-8 relative">
               {/* Exit Button */}
-              <div className="relative z-10 w-[150px] h-[50px] bg-[#333] border-4 border-red-500 rounded-l-2xl border-r-0 ml-5">
+              <div className="relative z-10 w-[140px] h-[50px] bg-[#333] border-4 border-red-500 rounded-l-2xl border-r-0 ml-5">
                 <button className="w-full h-full bg-red-500 text-white font-bold text-lg flex justify-center items-center rounded-l-2xl shadow-inner">
                   <span>EXIT</span>
                   <span className="ml-2 text-xl"
@@ -219,7 +268,7 @@ export default function EyeIconBigPopup({ onClose }) {
           </div> */}
               <div
                 onClick={() => setSelectedBank(bankDetails[0])} // Open first (or latest) bank detail
-                className="cursor-pointer border-4 border-red-500 rounded-2xl bg-white px-5 h-[40px] flex items-center justify-center -translate-x-[20px] translate-y-3"
+                className="cursor-pointer border-4 border-red-500 rounded-2xl bg-white ml-3 px-5 h-[40px] flex items-center justify-center -translate-x-[20px] translate-y-3"
               >
                 <span className="font-bold text-red-500 mr-2">
                   Company Account Number -
@@ -251,7 +300,7 @@ export default function EyeIconBigPopup({ onClose }) {
               <div className="border-4 border-red-500 rounded-2xl bg-white px-5 h-[40px] flex items-center justify-center -translate-x-[20px] translate-y-3">
                 <span className="font-bold text-red-500 mr-2">DUE</span>
                 <span className="font-bold whitespace-nowrap">
-                  <span className="text-[#A80C0F]">$$$$$$$$$</span> + <span className="text-[#FF0505]">$$$$$$$$$</span> = $$$$$$$$$
+                  <span className="text-[#A80C0F]">{stats.totalLivePayoutBill}.00</span> + <span className="text-[#FF0505]">{stats.totalPaymentDue}.00</span> = {stats.totalDue}.00
                 </span>
               </div>
             </div>

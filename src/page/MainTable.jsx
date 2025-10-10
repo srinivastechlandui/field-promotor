@@ -8,10 +8,12 @@ import UnVerifiedPopup from "../models/UnverifiedPopup";
 import ProcessingPopup from "../models/ProcessingPopup";
 import  FilterBar from "./FilterBar";
 import KeypadModal from '../models/KeypadModal';
+import EyeIconBigPopup from '../models/EyeIconBigPopup';
 import BASE_URL from "../utils/Urls"
 
 // const BASE_URL = "http://localhost:8080/api/v1"
-const MainTable = ({ searchText, filterOption, userIdFilters = {} }) => {
+const MainTable = ({ searchText, filterOption, userIdFilters = {}, onTodayTotals }) => {
+  const [showEyeIconBigPopup, setShowEyeIconBigPopup] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isActivatePopupOpen, setIsActivatePopupOpen] = useState(false);
   const [isUnFilledPopupOpen, setIsUnFilledPopupOpen] = useState(false);
@@ -234,6 +236,7 @@ const endLivePayout = async (user_id) => {
         if (res.data && res.data.users) {
           const formattedUsers = res.data.users.map((user) => ({
             profile_img: user.profile_img || "https://avatar.iran.liara.run/public/1",
+            login_image: user.login_image || "https://via.placeholder.com/35x35",
             user_id: user.user_id,
             email: user.email || "",
             phone_number: user.phone_number,
@@ -492,12 +495,18 @@ const todayGroupTotals = Object.entries(groupBy(tableData, "group")).reduce(
 
 
 
-// Today edited count
-const todayTotals = {
-  paymentDue: tableData.filter(u => u.paymentDue > 0 && isToday(u.updated_at)).length,
-  bankedEarnings: tableData.filter(u => u.bankedEarnings > 0 && isToday(u.updated_at)).length,
-  paidEarnings: tableData.filter(u => u.paidEarnings > 0 && isToday(u.updated_at)).length,
-};
+  // Today edited count
+  const todayTotals = {
+    paymentDue: tableData.filter(u => u.paymentDue > 0 && isToday(u.updated_at)).length,
+    bankedEarnings: tableData.filter(u => u.bankedEarnings > 0 && isToday(u.updated_at)).length,
+    paidEarnings: tableData.filter(u => u.paidEarnings > 0 && isToday(u.updated_at)).length,
+  };
+  // Notify parent (Header) of todayTotals
+  useEffect(() => {
+    if (typeof onTodayTotals === 'function') {
+      onTodayTotals(todayTotals);
+    }
+  }, [todayTotals, onTodayTotals]);
 
   return (
     <>
@@ -1045,7 +1054,7 @@ const todayTotals = {
         </div>
         <div className='flex items-center justify-between w-full px-4 text-[#B100AE] font-bold'>
           <p>NO OF BANKED EARNINGS ACCOUNTS</p>
-         <span>{todayTotals.bankedEarnings} -Accounts</span>
+          <span>{todayTotals.bankedEarnings} -Accounts</span>
         </div>
       </div>
     </>

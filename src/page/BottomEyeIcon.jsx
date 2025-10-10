@@ -6,7 +6,7 @@ import { FaEye } from 'react-icons/fa';
 import KeypadModal from '../models/KeypadModal';
 import ConfirmModal from '../models/ConfirmModal';
 import EyeIconBigPopup from '../models/EyeIconBigPopup';
-export default function BottomEyeIcon({ onClose}){
+export default function BottomEyeIcon({ onClose, todayBankedEarningsCount = 0, todayPaidEarningsCount = 0, todayPaymentDueCount = 0 }) {
   const [showKeyPad, setShowKeypad] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showEyeIconBigPopup , setShowEyeIconBigPopup] = useState(false);
@@ -19,7 +19,17 @@ export default function BottomEyeIcon({ onClose}){
   return (
     <>
       {showEyeIconBigPopup && (
-        <EyeIconBigPopup onClose={() => setShowEyeIconBigPopup(false)} />
+        <EyeIconBigPopup
+          user={{
+            todayBankedEarningsCount,
+            todayPaidEarningsCount,
+            todayPaymentDueCount,
+          }}
+          onClose={() => {
+            setShowEyeIconBigPopup(false);
+            onClose?.();
+          }}
+        />
       )}
       <div className="relative h-20 mt-10">
         {!showKeyPad && !showEyeIconBigPopup && (
@@ -55,14 +65,6 @@ export default function BottomEyeIcon({ onClose}){
           />
         )}
       </div>
-      {showEyeIconBigPopup && (
-        <EyeIconBigPopup
-          onClose={() => {
-            setShowEyeIconBigPopup(false);
-            onClose?.();
-          }}
-        />
-      )}
     </>
   );
 };

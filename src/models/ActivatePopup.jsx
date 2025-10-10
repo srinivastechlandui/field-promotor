@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { FaBars, FaCamera, FaCaretDown, FaCaretUp, FaCheck, FaComments, FaEdit ,FaSave, FaTimes,  FaTrash, FaPhoneAlt, FaPlusCircle, FaToggleOff, FaToggleOn, FaLock, FaLockOpen } from "react-icons/fa";
+import { FaBars, FaCamera, FaCaretDown, FaCaretUp, FaCheck, FaComments, FaEdit, FaSave, FaTimes, FaTrash, FaPhoneAlt, FaPlusCircle, FaToggleOff, FaToggleOn, FaLock, FaLockOpen } from "react-icons/fa";
 import selfi from '../Assets/selfi.png';
 import activeimg from '../Assets/active-img.png';
 import camera from '../Assets/camera.png'
@@ -18,7 +18,10 @@ import KeypadModal from "./KeypadModal";
 const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "5094";
 
 const ActivatePopup = ({ user, onClose, image }) => {
-//   const BASE_URL = `http://localhost:8080/api/v1`
+    // const BASE_URL = `http://localhost:8080/api/v1`
+    // Status dropdown state
+    const [status, setStatus] = useState(user?.status === "DEACTIVATED" ? "DEACTIVATED" : "ACTIVE");
+    const [statusLoading, setStatusLoading] = useState(false);
     const [isToggled, setIsToggled] = useState(true);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -34,6 +37,7 @@ const ActivatePopup = ({ user, onClose, image }) => {
     const nomineeName = user?.nominee_name || "";
     const nomineePhone = user?.nominee_phone_no || "";
     const profile_img = user?.profile_img || user?.profile_img || "";
+    const login_image = user?.login_image || "";
     const aadhar_front_img = user?.aadhar_front_img || "";
     const aadhar_back_img = user?.aadhar_back_img || activeimg;
     const pan_front_img = user?.pan_front_img || "";
@@ -41,110 +45,126 @@ const ActivatePopup = ({ user, onClose, image }) => {
     const [selectedImage, setSelectedImage] = useState("");
     const [approvedCodes, setApprovedCodes] = useState([]);
     const [rejectedCodes, setRejectedCodes] = useState([]);
-    const [couponCode, setCouponCode] = useState(user?.coupon_code || "");
     const [showModal, setShowModal] = useState(false);
     const [notifications, setNotifications] = useState([]);
-    const [filter, setFilter] = useState("all"); 
+    const [filter, setFilter] = useState("all");
     const [deactivated, setDeactivated] = useState(false);
     const [steps, setSteps] = useState([]);
-
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState({
-    email: user?.email || "",
-    employer_name: user?.employer_name || user?.name || "",
-    phone_number: user?.phone_number || "",
-    aadhar_no: user?.aadhar_no || "",
-    pan_card_number: user?.pan_card_number || "",
-    ifsc_code: user?.ifsc_code || "",
-    bank_account_no: user?.bank_account_no || "",
-    nominee_name: user?.nominee_name || "",
-    nominee_phone_no: user?.nominee_phone_no || "",
+        email: user?.email || "",
+        employer_name: user?.employer_name || user?.name || "",
+        phone_number: user?.phone_number || "",
+        aadhar_no: user?.aadhar_no || "",
+        pan_card_number: user?.pan_card_number || "",
+        ifsc_code: user?.ifsc_code || "",
+        bank_account_no: user?.bank_account_no || "",
+        nominee_name: user?.nominee_name || "",
+        nominee_phone_no: user?.nominee_phone_no || "",
     });
 
+    const [localUser, setLocalUser] = useState(user);
+    const [couponCode, setCouponCode] = useState(user.coupon_code || "");
+    const [validDate, setValidDate] = useState(user.valid_date ? user.valid_date.split("T")[0] : "");
+    const [expiredDate, setExpiredDate] = useState(user.expired_date ? user.expired_date.split("T")[0] : "");
+
+    useEffect(() => {
+        setLocalUser(user);
+        setCouponCode(user.coupon_code || "");
+        setValidDate(user.valid_date ? user.valid_date.split("T")[0] : "");
+        setExpiredDate(user.expired_date ? user.expired_date.split("T")[0] : "");
+        setStatus(user?.status === "DEACTIVATED" ? "DEACTIVATED" : "ACTIVE");
+    }, [user]);
+
+
+    useEffect(() => {
+        setLocalUser(user);
+    }, [user]);
+
     const handleChange = (e) => {
-    setEditData({ ...editData, [e.target.name]: e.target.value });
+        setEditData({ ...editData, [e.target.name]: e.target.value });
     };
 
     const handleSave = async () => {
-    try {
-        const res = await axios.put(
-        `${BASE_URL}/users/admin/update/${user.user_id}`,
-        editData
-        );
-        alert(res.data.message);
-        setIsEditing(false);
-    } catch (err) {
-        alert("❌ Failed: " + (err.response?.data?.message || err.message));
-    }
+        try {
+            const res = await axios.put(
+                `${BASE_URL}/users/admin/update/${user.user_id}`,
+                editData
+            );
+            alert(res.data.message);
+            setIsEditing(false);
+        } catch (err) {
+            alert("❌ Failed: " + (err.response?.data?.message || err.message));
+        }
     };
 
 
 
-   useEffect(() => {
+    useEffect(() => {
         const fetchProgress = async () => {
             try {
-            const res = await axios.get(`${BASE_URL}/progress/${user.user_id}`);
+                const res = await axios.get(`${BASE_URL}/progress/${user.user_id}`);
 
-            // Adjust here based on actual API shape
-            const data = res.data?.targets || res.data;
+                // Adjust here based on actual API shape
+                const data = res.data?.targets || res.data;
 
-            const amounts = data?.amounts || [];
-            const accounts = data?.accounts || [];
+                const amounts = data?.amounts || [];
+                const accounts = data?.accounts || [];
 
-            const combined = amounts.map((top, i) => ({
-                top,
-                bottom: accounts[i] || "",
-            }));
+                const combined = amounts.map((top, i) => ({
+                    top,
+                    bottom: accounts[i] || "",
+                }));
 
-            setSteps(combined);
+                setSteps(combined);
             } catch (err) {
-            console.error("❌ Failed to fetch progress", err);
+                console.error("❌ Failed to fetch progress", err);
             } finally {
-            setLoading(false);
+                setLoading(false);
             }
         };
         if (user.user_id) fetchProgress();
     }, [user.user_id]);
 
-  useEffect(() => {
-  if (!user.user_id) return;
+    useEffect(() => {
+        if (!user.user_id) return;
 
-  const fetchNotifications = async () => {
-    setLoading(true);
-    try {
-      const url = `${BASE_URL}/notifications/${user.user_id}`;
-      const res = await axios.get(url);
-      if (res.data?.notifications) {
-        setNotifications(res.data.notifications);
-      }
-    } catch (err) {
-      console.error("❌ Failed to fetch notifications", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+        const fetchNotifications = async () => {
+            setLoading(true);
+            try {
+                const url = `${BASE_URL}/notifications/${user.user_id}`;
+                const res = await axios.get(url);
+                if (res.data?.notifications) {
+                    setNotifications(res.data.notifications);
+                }
+            } catch (err) {
+                console.error("❌ Failed to fetch notifications", err);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-  fetchNotifications();
-}, [user.user_id, BASE_URL]);
+        fetchNotifications();
+    }, [user.user_id, BASE_URL]);
 
 
-  // ✅ Filter notifications
-  const filtered = notifications.filter((n) => {
-    if (filter === "unread") return n.is_read === 0;
-    if (filter === "read") return n.is_read === 1;
-    return true;
-  });
+    // ✅ Filter notifications
+    const filtered = notifications.filter((n) => {
+        if (filter === "unread") return n.is_read === 0;
+        if (filter === "read") return n.is_read === 1;
+        return true;
+    });
 
-  const deleteNotification = async (notification_id) => {
-    try {
-      await axios.delete(`${BASE_URL}/notifications/${user.user_id}/${notification_id}`);
-      setNotifications((prev) =>
-        prev.filter((n) => n.notification_id !== notification_id)
-      );
-    } catch (err) {
-      console.error("❌ Failed to delete notification", err);
-    }
-  };
+    const deleteNotification = async (notification_id) => {
+        try {
+            await axios.delete(`${BASE_URL}/notifications/${user.user_id}/${notification_id}`);
+            setNotifications((prev) =>
+                prev.filter((n) => n.notification_id !== notification_id)
+            );
+        } catch (err) {
+            console.error("❌ Failed to delete notification", err);
+        }
+    };
 
     // Edit notification message
     const handleEditNotification = (notification) => {
@@ -184,31 +204,41 @@ const ActivatePopup = ({ user, onClose, image }) => {
         setEditingMessage("");
     };
 
-  const handleUpdateCoupon = async () => {
-    if (!couponCode.trim()) {
-      alert("⚠️ Coupon code is required");
-      return;
-    }
+    const handleUpdateCoupon = async () => {
+        if (!couponCode.trim()) {
+            alert("⚠️ Coupon code is required");
+            return;
+        }
 
-    setLoading(true);
-    try {
-      const response = await axios.put(
-        `${BASE_URL}/admin/coupon/${user.user_id}`,
-        { coupon_code: couponCode }
-      );
+        setLoading(true);
+        try {
+            const payload = { coupon_code: couponCode };
+            if (validDate) payload.valid_date = validDate;
+            if (expiredDate) payload.expired_date = expiredDate;
 
-      alert(response.data.message);
-      setShowModal(false);
-    } catch (err) {
-      if (err.response) {
-        alert(`❌ ${err.response.data.message}`);
-      } else {
-        alert("❌ Error: " + err.message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+            const response = await axios.put(
+                `${BASE_URL}/admin/coupon/${localUser.user_id}`,
+                payload
+            );
+
+            const result = response.data.result;
+
+            // ✅ Update UI instantly without reload
+            setLocalUser((prev) => ({
+                ...prev,
+                coupon_code: result.coupon_code,
+                valid_date: new Date(result.validDate).toLocaleDateString(),
+                expired_date: new Date(result.expiredDate).toLocaleDateString(),
+            }));
+
+            alert(response.data.message);
+            setShowModal(false);
+        } catch (err) {
+            alert(err.response?.data?.message || `❌ ${err.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleImageClick = (image) => {
         setSelectedImage(image);
@@ -264,39 +294,63 @@ const ActivatePopup = ({ user, onClose, image }) => {
         }
     };
 
-    
-    
-      useEffect(() => {
-        if (user?.status_code === -1) {
-            setDeactivated(true);
-            setSuccess("✅ User is already deactivated");
-        }
-    }, [user]);             
 
-        // Deactivate user handler (dynamic endpoint)
-        const handleDeactivate = async () => {
-            if (!window.confirm("Are you sure you want to deactivate this account?")) return;
+const [showActionDropdown, setShowActionDropdown] = useState(false);
 
-            try {
-                setLoading(true);
-                setError("");
-                setSuccess("");
-                const res = await axios.delete(`${BASE_URL}/users/admin/${user.user_id}`);
-                if (res.data?.message) {
-                    setSuccess(res.data.message);
-                } else {
-                    setSuccess("✅ User deactivated successfully");
-                }
-                setDeactivated(true);
-            } catch (err) {
-                setError(
-                    err.response?.data?.message ||
-                    "❌ Failed to deactivate user"
-                );
-            } finally {
-                setLoading(false);
-            }
-        };
+    // useEffect(() => {
+    //     if (user?.status_code === -1) {
+    //         setDeactivated(true);
+    //         setSuccess("✅ User is already deactivated");
+    //     }
+    // }, [user]);
+
+    // Deactivate user handler (dynamic endpoint)
+    // const handleDeactivate = async () => {
+    //     if (!window.confirm("Are you sure you want to deactivate this account?")) return;
+
+    //     try {
+    //         setLoading(true);
+    //         setError("");
+    //         setSuccess("");
+    //         const res = await axios.put(`${BASE_URL}/users/admin/status/${user.user_id}`);
+    //         if (res.data?.message) {
+    //             setSuccess(res.data.message);
+    //         } else {
+    //             setSuccess("✅ User deactivated successfully");
+    //         }
+    //         setDeactivated(true);
+    //     } catch (err) {
+    //         setError(
+    //             err.response?.data?.message ||
+    //             "❌ Failed to deactivate user"
+    //         );
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
+
+const handleToggleStatus = async () => {
+  try {
+    const newStatus = localUser.status === "ACTIVE" ? "DEACTIVATED" : "ACTIVE";
+
+    const response = await axios.put(
+      `${BASE_URL}/users/admin/status/${localUser.user_id}`,
+      { status: newStatus }
+    );
+
+    alert(response.data.message || `✅ User ${newStatus.toLowerCase()} successfully`);
+
+    // ✅ Update UI instantly
+    setLocalUser((prev) => ({
+      ...prev,
+      status: response.data.status,
+      status_code: response.data.status_code,
+    }));
+  } catch (err) {
+    alert(err.response?.data?.message || "❌ Failed to update status");
+  }
+};
+
 
     // Add missing state and handlers for bank account lock
     const [isBankAccountLocked, setIsBankAccountLocked] = useState(true);
@@ -338,19 +392,32 @@ const ActivatePopup = ({ user, onClose, image }) => {
     };
 
 
-
     return (
         <div
             className="flex flex-col items-center w-full fixed top-0 bottom-0 overflow-y-auto animate-slideInLeft"
             style={{
                 maxWidth: "931px",
-                // transformOrigin: "left top",
                 boxSizing: "border-box",
                 margin: "0 auto",
                 padding: "20px 0",
                 background: "linear-gradient(to top right, #002E64, #FFFFFF)",
             }}
         >
+            {/* Status Dropdown */}
+            {/* <div className="w-full flex justify-end mb-2">
+                <label className="mr-2 font-bold text-sm text-gray-700">Account Status:</label>
+                <select
+                    value={status}
+                    onChange={handleStatusChange}
+                    disabled={statusLoading}
+                    className="px-3 py-1 rounded border border-gray-400 text-sm bg-white text-gray-800"
+                    style={{ minWidth: 120 }}
+                >
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="DEACTIVATED">DEACTIVATED</option>
+                </select>
+                {statusLoading && <span className="ml-2 text-xs text-blue-500">Updating...</span>}
+            </div> */}
 
             {/* Top Section */}
             <div className="flex justify-between items-center w-full mb-6 scale-90">
@@ -370,13 +437,22 @@ const ActivatePopup = ({ user, onClose, image }) => {
                         <span className="text-[#43C701] font-bold text-xl">Activate</span>
                     </div>
                 </div> */}
+                 <div className="flex items-center gap-2 border border-green-200 ">
+                    <span className="text-sm font-semibold text-gray-700">Login Image</span>
+                    <img
+                        src={login_image || "https://via.placeholder.com/35x35"}
+                         onClick={() => handleImageClick(login_image)}
+                        alt="Login Icon"
+                        className="w-9 h-9 rounded-full border border-gray-400 object-cover"
+                    />
+                </div>
                 </div>
 
                 {/* Right Side - Triangle with Unactivate */}
                 <div className="relative flex flex-col items-center scale-90">
                     {/* <div className="w-0 h-0 border-l-[42.5px] border-r-[42.5px] border-b-[136px] border-l-transparent border-r-transparent border-b-[#C86E6E]"></div> */}
                     <div className="mt-[-16px] rounded-full border-2 border-[#FF0E12] bg-white flex items-center justify-center">
-                        <span className="text-[#FF0E12] font-bold text-xl">UN Activate</span>
+                        <span className="text-[#FF0E12] font-bold text-xl">{user.login_image ? "ACTIVE" : "UN ACTIVE"}</span>
                     </div>
                 </div>
                 {/* X Icon */}
@@ -397,7 +473,7 @@ const ActivatePopup = ({ user, onClose, image }) => {
                         {/* <img src={activeimg} alt="activeimg" /> */}
                         <img src={camera} alt="camera" className="mt-6" />
                         <div className="flex gap-2 mt-10 items-center">
-                            <div
+                            {/* <div
                                 disabled={loading}
                                 onClick={() => handleApprove(1)}
                                 className={`w-[64px] h-[24px] flex items-center justify-center bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition
@@ -409,8 +485,8 @@ const ActivatePopup = ({ user, onClose, image }) => {
                                     }`}
                             >
                                 {approvedCodes.includes(1) ? "ACCEPTED" : "ACCEPT"}
-                            </div>
-                            
+                            </div> */}
+
                             <div
                                 onClick={() => {
                                     if (!rejectedCodes.includes(1) && !approvedCodes.includes(1)) {
@@ -492,29 +568,29 @@ const ActivatePopup = ({ user, onClose, image }) => {
                             The details on the document should be clearly visible while uploading the picture
                         </p>
                         <div className="flex gap-2 mt-2 items-center">
-                            <button
-                            disabled={loading}
-                            onClick={() => handleApprove(3)}
-                            className={`w-[64px] h-[24px] flex items-center justify-center bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition
+                            {/* <button
+                                disabled={loading}
+                                onClick={() => handleApprove(3)}
+                                className={`w-[64px] h-[24px] flex items-center justify-center bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition
                             ${approvedCodes.includes(3) ? "bg-[#78FF47] text-white" // ✅ Approved
-                                                        : (rejectedCodes.includes(3) ||  user.status_code === 3)
-                                                        ? "bg-gray-500 text-white cursor-not-allowed pointer-events-none opacity-50" // ❌ Disabled (already rejected)
-                                                        : "bg-[#78FF47] text-white" // Default
-                                                       }`}
-                           >
-                            {approvedCodes.includes(3) ? "APPROVED" : "APPROVE"}
-                        </button>
+                                        : (rejectedCodes.includes(3) || user.status_code === 3)
+                                            ? "bg-gray-500 text-white cursor-not-allowed pointer-events-none opacity-50" // ❌ Disabled (already rejected)
+                                            : "bg-[#78FF47] text-white" // Default
+                                    }`}
+                            >
+                                {approvedCodes.includes(3) ? "APPROVED" : "APPROVE"}
+                            </button> */}
 
                             <button
                                 disabled={loading}
                                 onClick={() => handleReject(3)}
                                 className={`w-[64px] h-[24px] flex items-center justify-center bg-[#FF0E12] text-white rounded-lg text-xs font-bold hover:bg-red-700 transition
                                      ${rejectedCodes.includes(3) ? "bg-[#FC0A0A] text-white font-bold opacity-50 cursor-not-allowed pointer-events-none" // ✅ Rejected (disabled)
-                                                                 : (approvedCodes.includes(3) || user.status_code === 3)
-                                                                 ? "bg-gray-500 text-white cursor-not-allowed pointer-events-none opacity-50" // ❌ Disabled (already approved)
-                                                                 : "bg-[#FC0A0A] text-white font-bold cursor-pointer" // Active
-                                       }`}
-                                    >
+                                        : (approvedCodes.includes(3) || user.status_code === 3)
+                                            ? "bg-gray-500 text-white cursor-not-allowed pointer-events-none opacity-50" // ❌ Disabled (already approved)
+                                            : "bg-[#FC0A0A] text-white font-bold cursor-pointer" // Active
+                                    }`}
+                            >
                                 {rejectedCodes.includes(3) ? "REJECTED" : "REJECT"}
                             </button>
                         </div>
@@ -542,169 +618,121 @@ const ActivatePopup = ({ user, onClose, image }) => {
                         </button>
                     </div>
                     <div className="flex flex-col items-center text-white">
-                        <div className="text-xs font-bold tracking-wider mb-2">code</div>
-                        {/* <button
-                            className="text-white hover:opacity-80 transition-opacity flex items-center justify-center rounded-lg"
-                            style={{ width: '50px', height: '25px', background: 'linear-gradient(to bottom, #464399, #E52CB6)' }}
-                        >
-                            {user.coupon_code}
-                        </button> */}
-                         <button
+                        <div className="text-xs font-bold tracking-wider mb-2">Code</div>
+
+                        <button
                             onClick={() => setShowModal(true)}
-                            className="relative text-white hover:opacity-80 transition-opacity flex items-center justify-center rounded-lg"
+                            className="relative text-white hover:opacity-80 transition-opacity flex items-center justify-center rounded-lg m-2 px-3 py-2 text-sm "
                             style={{
-                            width: "120px",
-                            height: "30px",
-                            background: "linear-gradient(to bottom, #464399, #E52CB6)",
+                                background: "linear-gradient(to bottom, #464399, #E52CB6)",
                             }}
                         >
-                            {couponCode || "N/A"}
+                            {localUser.coupon_code || "N/A"}
                             <FaEdit className="ml-2 text-yellow-300" />
                         </button>
+
                         {/* Modal */}
                         {showModal && (
                             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                            <div className="bg-white rounded-lg shadow-lg p-6 w-80">
-                                <h2 className="text-lg font-bold mb-4">Edit Coupon</h2>
+                                <div className="bg-white rounded-lg shadow-lg p-6 w-80">
+                                    <h2 className="text-lg font-bold text-black ">Edit Coupon</h2>
 
-                                <input
-                                type="text"
-                                value={couponCode}
-                                onChange={(e) => setCouponCode(e.target.value)}
-                                className="w-full border rounded px-3 py-2 mb-4 text-black"
-                                placeholder="Enter coupon code"
-                                />
+                                    <label className="block text-sm font-semibold mb-1 text-black">Coupon Code</label>
+                                    <input
+                                        type="text"
+                                        value={couponCode}
+                                        onChange={(e) => setCouponCode(e.target.value)}
+                                        className="w-full border rounded px-3 py-2 mb-4 text-black"
+                                        placeholder="Enter coupon code"
+                                    />
 
-                                <div className="flex justify-end gap-3">
-                                <button
-                                    onClick={() => setShowModal(false)}
-                                    className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleUpdateCoupon}
-                                    disabled={loading}
-                                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-                                >
-                                    {loading ? "Updating..." : "Update"}
-                                </button>
+                                    <label className="block text-sm font-semibold mb-1 text-black ">Valid From</label>
+                                    <input
+                                        type="date"
+                                        value={validDate}
+                                        onChange={(e) => setValidDate(e.target.value)}
+                                        className="w-full border rounded px-3 py-2 mb-4 text-black"
+                                    />
+
+                                    <label className="block text-sm font-semibold mb-1 text-black ">Expires On</label>
+                                    <input
+                                        type="date"
+                                        value={expiredDate}
+                                        onChange={(e) => setExpiredDate(e.target.value)}
+                                        className="w-full border rounded px-3 py-2 mb-4 text-black"
+                                    />
+
+                                    <div className="flex justify-end gap-3">
+                                        <button
+                                            onClick={() => setShowModal(false)}
+                                            className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={handleUpdateCoupon}
+                                            disabled={loading}
+                                            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                                        >
+                                            {loading ? "Updating..." : "Update"}
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
                             </div>
                         )}
-                        <div className="w-full text-[1xl] mb-1 tracking-tight text-black mt-2 text-center">Valid between</div>
-                        <div className="w-[180px] text-[1xl] mb-1 tracking-tight text-black mt-2 text-center"> {user.valid_date} to {user.expired_date}</div>
+
+                        <div className="w-full text-[1xl] mb-1 tracking-tight text-black mt-2 text-center">
+                            Valid between
+                        </div>
+                        <div className="w-[180px] text-[1xl] mb-1 tracking-tight text-black mt-2 text-center">
+                            {localUser.valid_date} to {localUser.expired_date}
+                        </div>
+
                         <div className="w-full mt-1">
-                            {/* <div className="text-sm font-semibold mb-1">Banked earnings</div> */}
-                            {/* <div
-                                className="w-[92px] h-[15px] bg-cover bg-center flex flex-row gap-2 items-center justify-center rounded-lg"
-                                style={{ backgroundImage: `url(${bank})` }}>
-                                {[...Array(6)].map((_, i) => (
-                                    <div
-                                        key={i}
-                                        className="w-[6px] h-[7px] bg-white border border-black rounded-sm"
-                                    />
-                                ))}
-                            </div> */}
-                            {/* <div
-                                className="flex  items-center bg-white rounded-lg border border-red-200 px-3 py-2 shadow-md w-[136px] h-[63px] relative my-2">
-                                <div className=" absolute text-xs text-gray-600 font-medium mb-[47px]">Amount</div>
-                                <div className="flex items-center w-full relative justify-between">
-                                    <div
-                                        className="absolute h-[2px] bg-green-500 top-1/2 -translate-y-1/2"
-                                        style={{
-                                            left: '16px',
-                                            right: '24px',
-                                        }}
-                                    ></div>
 
-                                    <div
-                                        className="absolute h-[2px] bg-green-500 top-1/2 -translate-y-1/2"
-                                        style={{
-                                            left: '29px',
-                                            width: '64px'
-                                        }}
-                                    ></div>
-
-                                    <div className="flex flex-col items-center z-10">
-                                        <span className="text-xs font-bold text-black">0</span>
-                                        <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center text-white text-[10px]">✓</div>
-                                        <span className="text-xs text-gray-600">3</span>
-                                    </div>
-
-                                    <div className="flex flex-col items-center z-10">
-                                        <span className="text-xs font-bold text-black">0</span>
-                                        <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center text-white text-[10px]">✓</div>
-                                        <span className="text-xs text-gray-600">8</span>
-                                    </div>
-
-                                    <div className="flex flex-col items-center z-10">
-                                        <span className="text-xs font-bold text-black">550</span>
-                                        <div className="w-4 h-4 rounded-full border-2 border-blue-500 bg-white"></div>
-                                        <span className="text-xs text-gray-600">11</span>
-                                    </div>
-
-                                    <div className="flex flex-col items-center z-10">
-                                        <span className="text-xs font-bold text-black">850</span>
-                                        <div className="w-4 h-4 rounded-full border-2 border-gray-300 bg-white"></div>
-                                        <span className="text-xs text-gray-600">13</span>
-                                    </div>
-                                </div>
-                                <div className=" absolute text-xs text-gray-600 font-medium mt-[47px]">Accounts</div>
-                            </div> */}
                             <div className="flex items-center bg-white rounded-lg border border-red-200 px-3 py-2 shadow-md w-[156px] h-[110px] relative my-2">
-                                    {/* Labels */}
-                                    <div className="absolute text-xs text-gray-600 font-medium mb-20">
-                                        Amount
-                                    </div>
-                                    {/* <div className="absolute text-xs text-gray-600 font-medium mt-[47px]">
-                                        Accounts
-                                    </div> */}
+                                {/* Labels */}
+                                <div className="absolute text-xs text-gray-600 font-medium mb-20">
+                                    Amount
+                                </div>
 
-                                    {/* Tracker line */}
-                                    <div className="flex items-center w-full relative justify-between mt-3">
-                                        <div
+
+                                {/* Tracker line */}
+                                <div className="flex items-center w-full relative justify-between mt-3">
+                                    <div
                                         className="absolute h-[2px] bg-green-500 top-1/2 -translate-y-1/2"
                                         style={{ left: "16px", right: "24px" }}
-                                        ></div>
+                                    ></div>
 
-                                        {/* Steps */}
-                                        {steps.map((step, index) => (
+                                    {/* Steps */}
+                                    {steps.map((step, index) => (
                                         <div key={index} className="flex flex-col items-center z-10">
                                             {/* Top value */}
                                             <span className="text-xs font-bold text-black">{step.top}</span>
 
                                             {/* Circle */}
                                             <div
-                                            className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
-                                                index < 2
-                                                ? "bg-green-500 text-white"
-                                                : "border-2 border-gray-300 bg-white"
-                                            }`}
+                                                className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${index < 2
+                                                    ? "bg-green-500 text-white"
+                                                    : "border-2 border-gray-300 bg-white"
+                                                    }`}
                                             >
-                                            {index < 2 && <FaCheck />}
+                                                {index < 2 && <FaCheck />}
                                             </div>
 
                                             {/* Bottom value */}
                                             <span className="text-xs text-gray-600">{step.bottom}</span>
                                         </div>
-                                        ))}
-                                    </div>
+                                    ))}
+                                </div>
 
-                                    <div className="absolute bottom-2 left-3 text-xs text-gray-600 font-medium">
-                                        Accounts
-                                    </div>
+                                <div className="absolute bottom-2 left-3 text-xs text-gray-600 font-medium">
+                                    Accounts
+                                </div>
                             </div>
 
                         </div>
-                        {/* Unrooted accounts */}
-                        {/* <div className="flex flex-col items-center">
-                            <div className="w-10 h-10 bg-white rounded-lg border-l-2 border-b-2 border-green-500 bg-transparent">
-                                <img src={man} alt="" />
-                            </div>
-                            <p className="text-xs text-white text-bold">Unrooted accounts</p>
-                        </div> */}
+
                     </div>
                 </div>
                 {/* card 4 */}
@@ -718,8 +746,8 @@ const ActivatePopup = ({ user, onClose, image }) => {
 
                     </div>
                     <FaCaretDown className="text-amber-900 self-start ml-5" />
-                    <div className="w-[84px] h-[20px] flex items-center justify-center bg-[linear-gradient(to_bottom,#464399,#E52CB6)] rounded-lg">
-                        <span className="text-sm text-white flex items-center justify-center">{user.coupon_code}</span>
+                    <div className=" h-[20px] flex items-center justify-center bg-[linear-gradient(to_bottom,#464399,#E52CB6)] rounded-lg m-2 px-3 py-2 text-sm">
+                        <span className="text-sm text-white flex items-center justify-center ">{user.coupon_code}</span>
                     </div>
                     <div className="w-[153px] h-[36px] bg-[#F5E4E4] rounded-lg mt-2 px-2 flex flex-col justify-center">
                         <p className="text-green-500 text-[9px] leading-none">Completed tables</p>
@@ -772,22 +800,22 @@ const ActivatePopup = ({ user, onClose, image }) => {
             </div>
             {/* Third Section */}
             <div className="flex items-center justify-between gap-10 mb-5">
-                  {/* card1 - View Account */}
-                            <div
-                            className="w-[218px] h-[468px] bg-cover bg-center flex flex-col items-center px-4 py-2 rounded-lg"
-                            style={{ backgroundImage: `url(${viewAccount})` }}
-                            >
-                            {/* Header with Edit / Save / Cancel */}
-                            <div className="flex justify-between items-center w-full mb-5">
-                                <div className="flex items-center gap-2">
-                                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-[#3a1e0b] font-bold">
-                                    👤
-                                </div>
-                                <h2 className="text-xs font-bold text-white">View Account</h2>
-                                </div>
-                                <div className="flex gap-2">
-                                {isEditing ? (
-                                    <>
+                {/* card1 - View Account */}
+                <div
+                    className="w-[218px] h-[468px] bg-cover bg-center flex flex-col items-center px-4 py-2 rounded-lg"
+                    style={{ backgroundImage: `url(${viewAccount})` }}
+                >
+                    {/* Header with Edit / Save / Cancel */}
+                    <div className="flex justify-between items-center w-full mb-5">
+                        <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-[#3a1e0b] font-bold">
+                                👤
+                            </div>
+                            <h2 className="text-xs font-bold text-white">View Account</h2>
+                        </div>
+                        <div className="flex gap-2">
+                            {isEditing ? (
+                                <>
                                     <button
                                         onClick={handleSave}
                                         className="text-green-500 hover:text-green-700"
@@ -800,92 +828,90 @@ const ActivatePopup = ({ user, onClose, image }) => {
                                     >
                                         <FaTimes />
                                     </button>
-                                    </>
-                                ) : (
-                                    <button
+                                </>
+                            ) : (
+                                <button
                                     onClick={() => setIsEditing(true)}
                                     className="text-blue-400 hover:text-blue-600"
-                                    >
+                                >
                                     <FaEdit />
-                                    </button>
-                                )}
-                                </div>
-                            </div>
+                                </button>
+                            )}
+                        </div>
+                    </div>
 
-                            {/* Input fields */}
-                            <div className="space-y-2 w-full">
-                                {/* All fields except BANK ACCOUNT */}
-                                {[
-                                { label: "EMAIL", name: "email", value: email },
-                                { label: "AADHAR NO.", name: "aadhar_no", value: aadhar },
-                                { label: "EMPLOYER NAME", name: "employer_name", value: employerName },
-                                { label: "PHONE", name: "phone_number", value: user?.phone_number || "" },
-                                { label: "PAN CARD", name: "pan_card_number", value: pan },
-                                { label: "IFSC CODE", name: "ifsc_code", value: ifsc },
-                                { label: "NOMINEE NAME", name: "nominee_name", value: nomineeName },
-                                { label: "NOMINEE PH NO.", name: "nominee_phone_no", value: nomineePhone },
-                                ].map((field) => (
-                                <div key={field.name}>
-                                    <label className="block text-white text-[7px]">{field.label}</label>
-                                    <input
+                    {/* Input fields */}
+                    <div className="space-y-2 w-full">
+                        {/* All fields except BANK ACCOUNT */}
+                        {[
+                            { label: "EMAIL", name: "email", value: email },
+                            { label: "AADHAR NO.", name: "aadhar_no", value: aadhar },
+                            { label: "EMPLOYER NAME", name: "employer_name", value: employerName },
+                            { label: "PHONE", name: "phone_number", value: user?.phone_number || "" },
+                            { label: "PAN CARD", name: "pan_card_number", value: pan },
+                            { label: "IFSC CODE", name: "ifsc_code", value: ifsc },
+                            { label: "NOMINEE NAME", name: "nominee_name", value: nomineeName },
+                            { label: "NOMINEE PH NO.", name: "nominee_phone_no", value: nomineePhone },
+                        ].map((field) => (
+                            <div key={field.name}>
+                                <label className="block text-white text-[7px]">{field.label}</label>
+                                <input
                                     type="text"
                                     name={field.name}
                                     value={editData[field.name]}
                                     onChange={handleChange}
                                     className={`w-full px-4 py-1 text-xs border rounded-lg outline-none
-                                        ${
-                                        isEditing
+                                        ${isEditing
                                             ? "border-yellow-400 bg-white text-black"
                                             : "border-white bg-transparent text-white"
                                         }`}
                                     readOnly={!isEditing}
-                                    />
-                                </div>
-                                ))}
-                                {/* BANK ACCOUNT field (separate with edit/save icon) */}
-                                <div className="relative">
-                                  <label className="text-white text-[7px] flex items-center">
-                                    BANK ACCOUNT NUMBER
-                                    {isBankAccountLocked ? (
-                                      <FaLock
+                                />
+                            </div>
+                        ))}
+                        {/* BANK ACCOUNT field (separate with edit/save icon) */}
+                        <div className="relative">
+                            <label className="text-white text-[7px] flex items-center">
+                                BANK ACCOUNT NUMBER
+                                {isBankAccountLocked ? (
+                                    <FaLock
                                         className="ml-2 text-yellow-400 cursor-pointer"
                                         title="Unlock to edit"
                                         onClick={handleUnlockBankAccount}
-                                      />
-                                    ) : (
-                                      <FaLockOpen className="ml-2 text-green-500" title="Unlocked" />
-                                    )}
-                                  </label>
-                                  <input
-                                    type="text"
-                                    name="bank_account_no"
-                                    value={editData["bank_account_no"]}
-                                    onChange={handleChange}
-                                    className={`w-full px-4 py-1 text-xs border rounded-lg outline-none pr-10
-                                      ${
-                                        isEditingBankAccount
-                                          ? "border-yellow-400 bg-white text-black"
-                                          : "border-white bg-transparent text-white"
-                                      }`}
-                                    readOnly={!isEditingBankAccount}
-                                  />
-                                  <button
-                                    className="absolute top-3/4 right-2 transform -translate-y-3/4 text-blue-500"
-                                    onClick={isEditingBankAccount ? handleBankAccountSave : handleBankAccountEditToggle}
-                                  >
-                                    {isEditingBankAccount ? <FaSave /> : <FaEdit />}
-                                  </button>
-                                </div>
-                            </div>
-                            {/* Keypad Modal for Bank Account Lock */}
-                            {showBankLockModal && (
-                              <KeypadModal
-                                lockCode={PRIMARY_LOCK}
-                                onGoClick={handleBankAccountUnlockSuccess}
-                                onClose={handleBankLockModalClose}
-                              />
-                            )}
-                            </div>
+                                    />
+                                ) : (
+                                    <FaLockOpen className="ml-2 text-green-500" title="Unlocked" />
+                                )}
+                            </label>
+                            <input
+                                type="text"
+                                name="bank_account_no"
+                                value={editData["bank_account_no"]}
+                                onChange={handleChange}
+                                className={`w-full px-4 py-1 text-xs border rounded-lg outline-none pr-10
+                                      ${isEditingBankAccount
+                                        ? "border-yellow-400 bg-white text-black"
+                                        : "border-white bg-transparent text-white"
+                                    }`}
+                                readOnly={!isEditingBankAccount}
+                            />
+                            <button
+                                className="absolute top-3/4 right-2 transform -translate-y-3/4 text-blue-500"
+                                onClick={isEditingBankAccount ? handleBankAccountSave : handleBankAccountEditToggle}
+                            >
+                                {isEditingBankAccount ? <FaSave /> : <FaEdit />}
+                            </button>
+                        </div>
+                    </div>
+                    {/* Keypad Modal for Bank Account Lock */}
+                    {showBankLockModal && (
+                        <KeypadModal
+                            lockCode={PRIMARY_LOCK}
+                            onGoClick={handleBankAccountUnlockSuccess}
+                            onClose={handleBankLockModalClose}
+                        />
+                    )}
+                </div>
 
 
                 {/* card2 */}
@@ -925,119 +951,115 @@ const ActivatePopup = ({ user, onClose, image }) => {
                         ))}
                     </div>
                 </div>
-                
-                        {/* card 3  */}
-                     <div
-                        className="w-[179px] h-[340px] bg-cover bg-center flex flex-col items-center px-4 py-2 rounded-lg"
-                        style={{ backgroundImage: `url(${blue})` }}
-                        >
-                        {/* Header */}
-                        <div className="flex items-center gap-5 mb-2">
-                            <FaComments className="w-5 h-5 bg-white rounded-full text-[#3a1e0b] font-bold" />
-                            <h2 className="text-xs font-bold text-black">Notification</h2>
-                        </div>
 
-                        {/* Tabs */}
-                        <div className="flex items-center justify-center gap-2 border-b-2 border-[#988686] w-[112px] mb-3 text-[8px]">
-                            <span
+                {/* card 3  */}
+                <div
+                    className="w-[179px] h-[340px] bg-cover bg-center flex flex-col items-center px-4 py-2 rounded-lg"
+                    style={{ backgroundImage: `url(${blue})` }}
+                >
+                    {/* Header */}
+                    <div className="flex items-center gap-5 mb-2">
+                        <FaComments className="w-5 h-5 bg-white rounded-full text-[#3a1e0b] font-bold" />
+                        <h2 className="text-xs font-bold text-black">Notification</h2>
+                    </div>
+
+                    {/* Tabs */}
+                    <div className="flex items-center justify-center gap-2 border-b-2 border-[#988686] w-[112px] mb-3 text-[8px]">
+                        <span
                             onClick={() => setFilter("all")}
-                            className={`cursor-pointer ${
-                                filter === "all" ? "text-[#4D4D4D] font-bold" : "text-[#988686]"
-                            }`}
-                            >
+                            className={`cursor-pointer ${filter === "all" ? "text-[#4D4D4D] font-bold" : "text-[#988686]"
+                                }`}
+                        >
                             ALL
-                            </span>
-                            <span
+                        </span>
+                        <span
                             onClick={() => setFilter("unread")}
-                            className={`cursor-pointer ${
-                                filter === "unread" ? "text-[#4D4D4D] font-bold" : "text-[#988686]"
-                            }`}
-                            >
+                            className={`cursor-pointer ${filter === "unread" ? "text-[#4D4D4D] font-bold" : "text-[#988686]"
+                                }`}
+                        >
                             UNREAD
-                            </span>
-                            <span
+                        </span>
+                        <span
                             onClick={() => setFilter("read")}
-                            className={`cursor-pointer ${
-                                filter === "read" ? "text-[#4D4D4D] font-bold" : "text-[#988686]"
-                            }`}
-                            >
+                            className={`cursor-pointer ${filter === "read" ? "text-[#4D4D4D] font-bold" : "text-[#988686]"
+                                }`}
+                        >
                             READ
-                            </span>
-                        </div>
+                        </span>
+                    </div>
 
-                        {/* Notification List */}
-                        <div className="flex flex-col w-[139px] flex-grow overflow-y-auto">
-                            {loading ? (
-                                <p className="text-[10px] text-gray-500">Loading...</p>
-                            ) : filtered.length === 0 ? (
-                                <p className="text-[10px] text-gray-500">No notifications</p>
-                            ) : (
-                                filtered.map((n) => (
-                                    <div
-                                        key={n.notification_id}
-                                        className={`flex items-start justify-between p-1 mb-2 rounded text-[9px] ${
-                                            n.is_read ? "bg-gray-200" : "bg-yellow-100"
+                    {/* Notification List */}
+                    <div className="flex flex-col w-[139px] flex-grow overflow-y-auto">
+                        {loading ? (
+                            <p className="text-[10px] text-gray-500">Loading...</p>
+                        ) : filtered.length === 0 ? (
+                            <p className="text-[10px] text-gray-500">No notifications</p>
+                        ) : (
+                            filtered.map((n) => (
+                                <div
+                                    key={n.notification_id}
+                                    className={`flex items-start justify-between p-1 mb-2 rounded text-[9px] ${n.is_read ? "bg-gray-200" : "bg-yellow-100"
                                         }`}
-                                    >
-                                        <div className="flex-1 mr-1">
-                                            {editingNotificationId === n.notification_id ? (
-                                                <>
-                                                    <input
-                                                        type="text"
-                                                        value={editingMessage}
-                                                        onChange={handleEditMessageChange}
-                                                        className="text-xs border rounded px-1 py-0.5 w-full mb-1"
+                                >
+                                    <div className="flex-1 mr-1">
+                                        {editingNotificationId === n.notification_id ? (
+                                            <>
+                                                <input
+                                                    type="text"
+                                                    value={editingMessage}
+                                                    onChange={handleEditMessageChange}
+                                                    className="text-xs border rounded px-1 py-0.5 w-full mb-1"
+                                                    disabled={loading}
+                                                />
+                                                <div className="flex gap-1">
+                                                    <button
+                                                        onClick={() => handleEditMessageSave(n.notification_id)}
+                                                        className="text-green-600 text-[8px] border border-green-600 rounded px-1"
                                                         disabled={loading}
-                                                    />
-                                                    <div className="flex gap-1">
-                                                        <button
-                                                            onClick={() => handleEditMessageSave(n.notification_id)}
-                                                            className="text-green-600 text-[8px] border border-green-600 rounded px-1"
-                                                            disabled={loading}
-                                                        >
-                                                            Save
-                                                        </button>
-                                                        <button
-                                                            onClick={handleEditMessageCancel}
-                                                            className="text-gray-500 text-[8px] border border-gray-400 rounded px-1"
-                                                            disabled={loading}
-                                                        >
-                                                            Cancel
-                                                        </button>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <p>{n.message}</p>
-                                                    <span className="text-[7px] text-gray-500">
-                                                        {new Date(n.created_at).toLocaleString()}
-                                                    </span>
-                                                </>
-                                            )}
-                                        </div>
-                                        <div className="flex flex-col items-center gap-1 ml-1">
-                                            <button
-                                                onClick={() => handleEditNotification(n)}
-                                                className="text-blue-500 mb-1"
-                                                title="Edit notification"
-                                                disabled={editingNotificationId !== null && editingNotificationId !== n.notification_id}
-                                            >
-                                                <FaEdit size={10} />
-                                            </button>
-                                            <button
-                                                onClick={() => deleteNotification(n.notification_id)}
-                                                className="text-red-500"
-                                                title="Delete notification"
-                                                disabled={editingNotificationId === n.notification_id}
-                                            >
-                                                <FaTrash size={10} />
-                                            </button>
-                                        </div>
+                                                    >
+                                                        Save
+                                                    </button>
+                                                    <button
+                                                        onClick={handleEditMessageCancel}
+                                                        className="text-gray-500 text-[8px] border border-gray-400 rounded px-1"
+                                                        disabled={loading}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <p>{n.message}</p>
+                                                <span className="text-[7px] text-gray-500">
+                                                    {new Date(n.created_at).toLocaleString()}
+                                                </span>
+                                            </>
+                                        )}
                                     </div>
-                                ))
-                            )}
-                        </div>
-                        </div>
+                                    <div className="flex flex-col items-center gap-1 ml-1">
+                                        <button
+                                            onClick={() => handleEditNotification(n)}
+                                            className="text-blue-500 mb-1"
+                                            title="Edit notification"
+                                            disabled={editingNotificationId !== null && editingNotificationId !== n.notification_id}
+                                        >
+                                            <FaEdit size={10} />
+                                        </button>
+                                        <button
+                                            onClick={() => deleteNotification(n.notification_id)}
+                                            className="text-red-500"
+                                            title="Delete notification"
+                                            disabled={editingNotificationId === n.notification_id}
+                                        >
+                                            <FaTrash size={10} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
 
                 {/* card4 */}
                 <div
@@ -1058,27 +1080,154 @@ const ActivatePopup = ({ user, onClose, image }) => {
                     </div>
                 </div>
             </div>
-           <div className="w-[611px] h-[70px] bg-[#FF0E12] rounded-lg flex items-center justify-center">
-            <button
-                onClick={handleDeactivate}
-                disabled={loading || deactivated}
-                className="disabled:opacity-50"
-                autoFocus
-            >
-                <span className="text-white font-bold flex items-center">
-                    {loading
-                        ? "Deactivating..."
-                        : deactivated
-                            ? "DEACTIVATED ACCOUNT"
-                            : "DEACTIVATE ACCOUNT"}
-                </span>
-            </button>
+            <div className="w-[611px] h-[70px] bg-[#FF0E12] rounded-lg flex items-center justify-center">
+                {/* <button
+                    onClick={handleDeactivate}
+                    disabled={loading || deactivated || status === "DEACTIVATED"}
+                    className="disabled:opacity-50"
+                    autoFocus
+                >
+                    <span className="text-white font-bold flex items-center">
+                        {loading
+                            ? "Deactivating..."
+                            : deactivated || status === "DEACTIVATED"
+                                ? "DEACTIVATED ACCOUNT"
+                                : "DEACTIVATE ACCOUNT"}
+                    </span>
+                </button> */}
+            </div>
+            {/* Dropdown Action Button */}
+{/* <div className="relative mt-4">
+  <div className="inline-block text-left w-full">
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        setShowActionDropdown((prev) => !prev);
+      }}
+      className="inline-flex justify-between items-center w-full px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-purple-700 to-pink-600 rounded-md shadow-md hover:opacity-90 focus:outline-none"
+    >
+      Account Status
+      <svg
+        className="w-5 h-5 ml-2 -mr-1"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    </button>
+
+    {showActionDropdown && (
+      <div
+        className="origin-top-right absolute right-0 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="py-1">
+          <button
+            onClick={() => handleStatusChange("ACTIVE")}
+            disabled={localUser.status === "ACTIVE"}
+            className={`w-full text-left px-4 py-2 text-sm ${
+              localUser.status === "ACTIVE"
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-green-600 hover:bg-green-50 hover:text-green-800"
+            }`}
+          >
+            ✅ Activate
+          </button>
+
+          <button
+            onClick={() => handleStatusChange("DEACTIVATED")}
+            disabled={localUser.status === "DEACTIVATED"}
+            className={`w-full text-left px-4 py-2 text-sm ${
+              localUser.status === "DEACTIVATED"
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-red-600 hover:bg-red-50 hover:text-red-800"
+            }`}
+          >
+            ❌ Deactivate
+          </button>
         </div>
+      </div>
+    )}
+  </div>
+</div> */}
+
+    {/* Account Status Button */}
+        {/* Dropdown Action Button */}
+        <div className="relative mt-4 flex flex-col items-center text-center">
+            <div className="text-sm font-semibold mb-1 text-gray-700">
+                {localUser.employer_name || "User"} - Account Status
+            </div>
+            <div className="inline-block text-center w-[611px]">
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setShowActionDropdown((prev) => !prev);
+                    }}
+                    className="inline-flex justify-between items-center text-center w-full px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-purple-700 to-pink-600 rounded-md shadow-md hover:opacity-90 focus:outline-none"
+                >
+                    {localUser.status === "ACTIVE" ? "Active Account" : "Deactivated Account"}
+                    <svg
+                        className="w-5 h-5 ml-2 -mr-1"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+
+                {showActionDropdown && (
+                    <div
+                        className="origin-top-right absolute  right-0 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="py-1 text-center">
+                            <button
+                                onClick={async () => {
+                                    if (localUser.status !== "ACTIVE") {
+                                        await handleToggleStatus("ACTIVE");
+                                    }
+                                    setShowActionDropdown(false);
+                                }}
+                                disabled={localUser.status === "ACTIVE"}
+                                className={`w-full text-left px-4 py-2 text-sm ${
+                                    localUser.status === "ACTIVE"
+                                        ? "text-gray-400 cursor-not-allowed"
+                                        : "text-green-600 hover:bg-green-50 hover:text-green-800"
+                                }`}
+                            >
+                                ✅ Activate 
+                            </button>
+
+                            <button
+                                onClick={async () => {
+                                    if (localUser.status !== "DEACTIVATED") {
+                                        await handleToggleStatus("DEACTIVATED");
+                                    }
+                                    setShowActionDropdown(false);
+                                }}
+                                disabled={localUser.status === "DEACTIVATED"}
+                                className={`w-full text-left px-4 py-2 text-sm ${
+                                    localUser.status === "DEACTIVATED"
+                                        ? "text-gray-400 cursor-not-allowed"
+                                        : "text-red-600 hover:bg-red-50 hover:text-red-800"
+                                }`}
+                            >
+                                ❌ Deactivate
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+
             {(error || success) && (
                 <div
-                    className={`mt-4 text-center text-sm font-bold ${
-                        error ? "text-red-600" : "text-green-600"
-                    }`}
+                    className={`mt-4 text-center text-sm font-bold ${error ? "text-red-600" : "text-green-600"
+                        }`}
                 >
                     {error || success}
                 </div>
@@ -1088,7 +1237,7 @@ const ActivatePopup = ({ user, onClose, image }) => {
                 isOpen={isModalOpen}
                 onClose={handleClose}
             />
-           
+
         </div>
     );
 };
