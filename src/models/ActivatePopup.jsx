@@ -295,7 +295,7 @@ const ActivatePopup = ({ user, onClose, image }) => {
     };
 
 
-const [showActionDropdown, setShowActionDropdown] = useState(false);
+    const [showActionDropdown, setShowActionDropdown] = useState(false);
 
     // useEffect(() => {
     //     if (user?.status_code === -1) {
@@ -329,27 +329,27 @@ const [showActionDropdown, setShowActionDropdown] = useState(false);
     //     }
     // };
 
-const handleToggleStatus = async () => {
-  try {
-    const newStatus = localUser.status === "ACTIVE" ? "DEACTIVATED" : "ACTIVE";
+    const handleToggleStatus = async () => {
+        try {
+            const newStatus = localUser.status === "ACTIVE" ? "DEACTIVATED" : "ACTIVE";
 
-    const response = await axios.put(
-      `${BASE_URL}/users/admin/status/${localUser.user_id}`,
-      { status: newStatus }
-    );
+            const response = await axios.put(
+                `${BASE_URL}/users/admin/status/${localUser.user_id}`,
+                { status: newStatus }
+            );
 
-    alert(response.data.message || `✅ User ${newStatus.toLowerCase()} successfully`);
+            alert(response.data.message || `✅ User ${newStatus.toLowerCase()} successfully`);
 
-    // ✅ Update UI instantly
-    setLocalUser((prev) => ({
-      ...prev,
-      status: response.data.status,
-      status_code: response.data.status_code,
-    }));
-  } catch (err) {
-    alert(err.response?.data?.message || "❌ Failed to update status");
-  }
-};
+            // ✅ Update UI instantly
+            setLocalUser((prev) => ({
+                ...prev,
+                status: response.data.status,
+                status_code: response.data.status_code,
+            }));
+        } catch (err) {
+            alert(err.response?.data?.message || "❌ Failed to update status");
+        }
+    };
 
 
     // Add missing state and handlers for bank account lock
@@ -437,7 +437,7 @@ const handleToggleStatus = async () => {
                         <span className="text-[#43C701] font-bold text-xl">Activate</span>
                     </div>
                 </div> */}
-                 <div className="flex items-center gap-2 border border-green-200 ">
+                    {/* <div className="flex items-center gap-2 border border-green-200 ">
                     <span className="text-sm font-semibold text-gray-700">Login Image</span>
                     <img
                         src={login_image || "https://via.placeholder.com/35x35"}
@@ -445,15 +445,55 @@ const handleToggleStatus = async () => {
                         alt="Login Icon"
                         className="w-9 h-9 rounded-full border border-gray-400 object-cover"
                     />
-                </div>
+                </div> */}
+                    <div
+                        className="group flex items-center justify-between gap-3 px-3 py-2 border border-green-300 
+                        bg-gradient-to-r from-green-50 to-green-100 rounded-lg shadow-sm 
+                        hover:shadow-md transition-all duration-300 ease-in-out cursor-pointer"
+                        >
+                        {/* Label */}
+                        <span className="text-sm font-semibold text-gray-700 group-hover:text-green-700 transition-colors duration-300">
+                            Login Image
+                        </span>
+
+                        {/* Image */}
+                        <div className="relative">
+                            <img
+                                src={login_image || "https://via.placeholder.com/35x35"}
+                                onClick={() => handleImageClick(user.login_image)}
+                                alt="Login Icon"
+                                className="w-10 h-10 rounded-full border-2 border-green-400 object-cover 
+                                transform group-hover:scale-110 group-hover:border-green-600 
+                                transition-all duration-300 ease-in-out"
+                            />
+
+                            {/* Glow effect */}
+                            <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-40 
+                             bg-green-300 blur-md transition-opacity duration-300"></div>
+                        </div>
+                    </div>
+
                 </div>
 
                 {/* Right Side - Triangle with Unactivate */}
                 <div className="relative flex flex-col items-center scale-90">
                     {/* <div className="w-0 h-0 border-l-[42.5px] border-r-[42.5px] border-b-[136px] border-l-transparent border-r-transparent border-b-[#C86E6E]"></div> */}
-                    <div className="mt-[-16px] rounded-full border-2 border-[#FF0E12] bg-white flex items-center justify-center">
-                        <span className="text-[#FF0E12] font-bold text-xl">{user.login_image ? "ACTIVE" : "UN ACTIVE"}</span>
+                    <div
+                        className={`mt-[-16px] rounded-full border-2 bg-white flex items-center justify-center px-4 py-2 
+                        transition-all duration-300 ease-in-out shadow-sm hover:shadow-md cursor-default 
+                        ${user.login_image
+                        ? "border-green-500 hover:border-green-600"
+                        : "border-red-500 hover:border-red-600"
+                         }`}
+                    >
+                        <span
+                            className={`font-bold text-xl transition-colors duration-300 ${user.login_image ? "text-green-600" : "text-red-600"
+                                }`}
+                        >
+                            {user.login_image ? "ACTIVE" : "UNACTIVE"}
+                        </span>
                     </div>
+
                 </div>
                 {/* X Icon */}
                 <div onClick={onClose}
@@ -1097,7 +1137,7 @@ const handleToggleStatus = async () => {
                 </button> */}
             </div>
             {/* Dropdown Action Button */}
-{/* <div className="relative mt-4">
+            {/* <div className="relative mt-4">
   <div className="inline-block text-left w-full">
     <button
       onClick={(e) => {
@@ -1153,76 +1193,74 @@ const handleToggleStatus = async () => {
   </div>
 </div> */}
 
-    {/* Account Status Button */}
-        {/* Dropdown Action Button */}
-        <div className="relative mt-4 flex flex-col items-center text-center">
-            <div className="text-sm font-semibold mb-1 text-gray-700">
-                {localUser.employer_name || "User"} - Account Status
-            </div>
-            <div className="inline-block text-center w-[611px]">
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setShowActionDropdown((prev) => !prev);
-                    }}
-                    className="inline-flex justify-between items-center text-center w-full px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-purple-700 to-pink-600 rounded-md shadow-md hover:opacity-90 focus:outline-none"
-                >
-                    {localUser.status === "ACTIVE" ? "Active Account" : "Deactivated Account"}
-                    <svg
-                        className="w-5 h-5 ml-2 -mr-1"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
+            {/* Account Status Button */}
+            {/* Dropdown Action Button */}
+            <div className="relative mt-4 flex flex-col items-center text-center">
+                <div className="text-sm font-semibold mb-1 text-gray-700">
+                    {localUser.employer_name || "User"} - Account Status
+                </div>
+                <div className="inline-block text-center w-[611px]">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setShowActionDropdown((prev) => !prev);
+                        }}
+                        className="inline-flex justify-between items-center text-center w-full px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-purple-700 to-pink-600 rounded-md shadow-md hover:opacity-90 focus:outline-none"
                     >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
+                        {localUser.status === "ACTIVE" ? "Active Account" : "Deactivated Account"}
+                        <svg
+                            className="w-5 h-5 ml-2 -mr-1"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
 
-                {showActionDropdown && (
-                    <div
-                        className="origin-top-right absolute  right-0 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="py-1 text-center">
-                            <button
-                                onClick={async () => {
-                                    if (localUser.status !== "ACTIVE") {
-                                        await handleToggleStatus("ACTIVE");
-                                    }
-                                    setShowActionDropdown(false);
-                                }}
-                                disabled={localUser.status === "ACTIVE"}
-                                className={`w-full text-left px-4 py-2 text-sm ${
-                                    localUser.status === "ACTIVE"
-                                        ? "text-gray-400 cursor-not-allowed"
-                                        : "text-green-600 hover:bg-green-50 hover:text-green-800"
-                                }`}
-                            >
-                                ✅ Activate 
-                            </button>
+                    {showActionDropdown && (
+                        <div
+                            className="origin-top-right absolute  right-0 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="py-1 text-center">
+                                <button
+                                    onClick={async () => {
+                                        if (localUser.status !== "ACTIVE") {
+                                            await handleToggleStatus("ACTIVE");
+                                        }
+                                        setShowActionDropdown(false);
+                                    }}
+                                    disabled={localUser.status === "ACTIVE"}
+                                    className={`w-full text-left px-4 py-2 text-sm ${localUser.status === "ACTIVE"
+                                            ? "text-gray-400 cursor-not-allowed"
+                                            : "text-green-600 hover:bg-green-50 hover:text-green-800"
+                                        }`}
+                                >
+                                    ✅ Activate
+                                </button>
 
-                            <button
-                                onClick={async () => {
-                                    if (localUser.status !== "DEACTIVATED") {
-                                        await handleToggleStatus("DEACTIVATED");
-                                    }
-                                    setShowActionDropdown(false);
-                                }}
-                                disabled={localUser.status === "DEACTIVATED"}
-                                className={`w-full text-left px-4 py-2 text-sm ${
-                                    localUser.status === "DEACTIVATED"
-                                        ? "text-gray-400 cursor-not-allowed"
-                                        : "text-red-600 hover:bg-red-50 hover:text-red-800"
-                                }`}
-                            >
-                                ❌ Deactivate
-                            </button>
+                                <button
+                                    onClick={async () => {
+                                        if (localUser.status !== "DEACTIVATED") {
+                                            await handleToggleStatus("DEACTIVATED");
+                                        }
+                                        setShowActionDropdown(false);
+                                    }}
+                                    disabled={localUser.status === "DEACTIVATED"}
+                                    className={`w-full text-left px-4 py-2 text-sm ${localUser.status === "DEACTIVATED"
+                                            ? "text-gray-400 cursor-not-allowed"
+                                            : "text-red-600 hover:bg-red-50 hover:text-red-800"
+                                        }`}
+                                >
+                                    ❌ Deactivate
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
-        </div>
 
             {(error || success) && (
                 <div
