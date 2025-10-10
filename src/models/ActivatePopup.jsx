@@ -460,16 +460,18 @@ const ActivatePopup = ({ user, onClose, image }) => {
                         <div className="relative">
                             <img
                                 src={login_image || "https://via.placeholder.com/35x35"}
-                                onClick={() => handleImageClick(user.login_image)}
+                                // onClick={() => handleImageClick(login_image)}
+                                  onClick={() => handleImageClick(user?.login_image)}
                                 alt="Login Icon"
                                 className="w-10 h-10 rounded-full border-2 border-green-400 object-cover 
                                 transform group-hover:scale-110 group-hover:border-green-600 
                                 transition-all duration-300 ease-in-out"
+                                // className="w-9 h-9 rounded-full border border-gray-400 object-cover"
                             />
 
                             {/* Glow effect */}
-                            <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-40 
-                             bg-green-300 blur-md transition-opacity duration-300"></div>
+                            {/* <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-40 
+                             bg-green-300 blur-md transition-opacity duration-300"></div> */}
                         </div>
                     </div>
 
