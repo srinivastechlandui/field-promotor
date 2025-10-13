@@ -65,10 +65,11 @@ const handleLivePayoutChange = (user_id, value) => {
     [user_id]: value,
   }));
 };
-
+const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
 // save to API
 const endLivePayout = async (user_id) => {
   const value = parseFloat(livePayoutValues[user_id]);
+    // updated_by: loggedInUser?.username || "Unknown User",
   if (isNaN(value)) {
     alert("Please enter a valid number.");
     return;
@@ -77,6 +78,7 @@ const endLivePayout = async (user_id) => {
   try {
     await axios.put(`${BASE_URL}/users/admin/financial-update/${user_id}`, {
       livePayoutBills: value,
+        updated_by: loggedInUser?.username || "Unknown User",
     });
     // ✅ reset only this user to 0 after save
     setLivePayoutValues((prev) => ({
@@ -122,10 +124,15 @@ const endLivePayout = async (user_id) => {
     }
     setEditLoading(true);
     try {
-      await axios.put(`${BASE_URL}/users/admin/financial-update/${user_id}`, {
-        paymentDue: value,
-      });
-      setPaymentDueValues((prev) => ({
+     const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+     const updated_by = loggedInUser?.name || "Unknown";
+     console.log("updated_by:", updated_by);
+
+    await axios.put(`${BASE_URL}/users/admin/financial-update/${user_id}`, {
+      paymentDue: value,
+      updated_by: loggedInUser?.username || "Unknown User",
+    });
+    setPaymentDueValues((prev) => ({
       ...prev,
       [user_id]: 0,
     }));
@@ -134,7 +141,7 @@ const endLivePayout = async (user_id) => {
       updated.add(user_id);
       return updated;
     });
-      await reloadTableData();
+    await reloadTableData();
     } catch (err) {
       alert(err.response?.data?.message || "Failed to save Payment Due.");
     } finally {
@@ -247,6 +254,8 @@ const endLivePayout = async (user_id) => {
             updated_at: user.updated_at,
             onboarding_fee: user.onboarding_fee,
             livePayoutBills:user.livePayoutBills|| 0,
+            liveAmountIsEditedBy:user.liveAmountIsEditedBy || "-",
+            paymentDueIsEditedBy:user.paymentDueIsEditedBy || "-",
             paymentDue: user.paymentDue || 0,
             paidEarnings: user.paidEarnings|| 0,
             bankedEarnings: user.bankedEarnings|| 0,
@@ -273,6 +282,7 @@ const endLivePayout = async (user_id) => {
             valid_date:formatDate(user.valid_date),
             expired_date:formatDate(user.expired_date),
             redeemed: user.redeem,
+            deactivate_reason: user.deactivate_reason
           }));
           setTableData(formattedUsers);
           res.data.users.forEach((u) => fetchTicketCount(u.user_id));
@@ -507,7 +517,8 @@ const todayGroupTotals = Object.entries(groupBy(tableData, "group")).reduce(
       onTodayTotals(todayTotals);
     }
   }, [todayTotals, onTodayTotals]);
-
+  // const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+  // console.log("loggedInuser",loggedInUser);
   return (
     <>
        <FilterBar
@@ -732,8 +743,8 @@ const todayGroupTotals = Object.entries(groupBy(tableData, "group")).reduce(
                             <div className="text-sm text-[#3021D7]">{formatDate(row.joinedDate)}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-3xl flex items-start">
-                              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <div className="text-3xl flex items-center mt-10">
+                              {/* <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
                                 <defs>
                                   <linearGradient id="dotsGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                                     <stop offset="0%" stopColor="#D9D9D9" />
@@ -743,13 +754,13 @@ const todayGroupTotals = Object.entries(groupBy(tableData, "group")).reduce(
                                 <circle cx="5" cy="12" r="3" fill="url(#dotsGradient)" />
                                 <circle cx="12" cy="12" r="3" fill="url(#dotsGradient)" />
                                 <circle cx="19" cy="12" r="3" fill="url(#dotsGradient)" />
-                              </svg>
+                              </svg> */}
                             </div>
                             <div className="text-sm text-[#A60CA8] font-bold">
                               ${row.bankedEarnings}
                             </div>
                             <div className="text-sm text-[#3021D7]">{formatDate(row.updated_at)}</div>
-                           <div className="text-sm text-blue-600">(EDITED BY)</div>
+                           <div className="text-sm text-blue-600">(Updated at)</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-lg font-bold text-[#29A80C]">
                             ${row.paidEarnings}
@@ -838,12 +849,12 @@ const todayGroupTotals = Object.entries(groupBy(tableData, "group")).reduce(
                     </div>
                        <div className="text-sm text-[#3021D7]">{formatDate(row.updated_at)}</div>
                        <div className="text-sm text-blue-600">(EDITED BY)</div>
+                       <div className="text-sm text-blue-400">{row.liveAmountIsEditedBy || "-"}</div>
+                       {/* <td>{user.updated_by || "—"}</td> */}
                     </>
                   )}
                 </td>
 
-
-                          
                           <td className="px-6 py-4 whitespace-nowrap text-lg font-bold text-[#5907FF]">
                             {row.superBonus}
                           </td>
@@ -943,6 +954,9 @@ const todayGroupTotals = Object.entries(groupBy(tableData, "group")).reduce(
                               </div>
                                <div className="text-sm text-[#3021D7]">{formatDate(row.updated_at)}</div>
                                <div className="text-sm text-blue-600">(EDITED BY)</div>
+                               <div className="text-sm text-blue-400">
+                                {row.paymentDueIsEditedBy || "-"}
+                              </div>
                            </>
                             )}
                           </td>

@@ -67,6 +67,9 @@ const ActivatePopup = ({ user, onClose, image }) => {
     const [couponCode, setCouponCode] = useState(user.coupon_code || "");
     const [validDate, setValidDate] = useState(user.valid_date ? user.valid_date.split("T")[0] : "");
     const [expiredDate, setExpiredDate] = useState(user.expired_date ? user.expired_date.split("T")[0] : "");
+    const [showActionDropdown, setShowActionDropdown] = useState(false);
+    const [showDeactivateReasonModal, setShowDeactivateReasonModal] = useState(false);
+    const [deactivateReason, setDeactivateReason] = useState("");
 
     useEffect(() => {
         setLocalUser(user);
@@ -295,7 +298,7 @@ const ActivatePopup = ({ user, onClose, image }) => {
     };
 
 
-    const [showActionDropdown, setShowActionDropdown] = useState(false);
+    // const [showActionDropdown, setShowActionDropdown] = useState(false);
 
     // useEffect(() => {
     //     if (user?.status_code === -1) {
@@ -329,27 +332,49 @@ const ActivatePopup = ({ user, onClose, image }) => {
     //     }
     // };
 
-    const handleToggleStatus = async () => {
-        try {
-            const newStatus = localUser.status === "ACTIVE" ? "DEACTIVATED" : "ACTIVE";
+    // const handleToggleStatus = async (status, reason = "") => {
+    //     try {
+    //         let payload = { status };
+    //         if (status === "DEACTIVATED" && reason) {
+    //             payload.reason = reason;
+    //         }
+    //         const response = await axios.put(
+    //             `${BASE_URL}/users/admin/status/${localUser.user_id}`,
+    //             payload
+    //         );
+    //         alert(response.data.message || `✅ User ${status.toLowerCase()} successfully`);
+    //         setLocalUser((prev) => ({
+    //             ...prev,
+    //             status: response.data.status,
+    //             status_code: response.data.status_code,
+    //             deactivate_reason: response.data.deactivate_reason || reason,
+    //         }));
+    //     } catch (err) {
+    //         alert(err.response?.data?.message || "❌ Failed to update status");
+    //     }
+    // };
 
-            const response = await axios.put(
-                `${BASE_URL}/users/admin/status/${localUser.user_id}`,
-                { status: newStatus }
-            );
+    const handleToggleStatus = async (status, reason = "") => {
+  try {
+    let payload = { status };
+    if (status === "DEACTIVATED" && reason) {
+      payload.reason = reason;
+    }
 
-            alert(response.data.message || `✅ User ${newStatus.toLowerCase()} successfully`);
+    const response = await axios.put(
+      `${BASE_URL}/users/admin/status/${localUser.user_id}`,
+      payload
+    );
 
-            // ✅ Update UI instantly
-            setLocalUser((prev) => ({
-                ...prev,
-                status: response.data.status,
-                status_code: response.data.status_code,
-            }));
-        } catch (err) {
-            alert(err.response?.data?.message || "❌ Failed to update status");
-        }
-    };
+    alert(response.data.message || `✅ User ${status.toLowerCase()} successfully`);
+
+    // Update and refetch to ensure DB reason persists
+    await setLocalUser(localUser.user_id);
+  } catch (err) {
+    alert(err.response?.data?.message || "❌ Failed to update status");
+  }
+};
+
 
 
     // Add missing state and handlers for bank account lock
@@ -1200,7 +1225,10 @@ const ActivatePopup = ({ user, onClose, image }) => {
             <div className="relative mt-4 flex flex-col items-center text-center">
                 <div className="text-sm font-semibold mb-1 text-gray-700">
                     {localUser.employer_name || "User"} - Account Status
-                </div>
+                    {/* {localUser.status === "DEACTIVATED" && ( */}
+                        <span className="ml-2 text-red-600">({localUser.deactivate_reason})</span>
+                    {/* )} */}
+                 </div>
                 <div className="inline-block text-center w-[611px]">
                     <button
                         onClick={(e) => {
@@ -1244,11 +1272,18 @@ const ActivatePopup = ({ user, onClose, image }) => {
                                 </button>
 
                                 <button
-                                    onClick={async () => {
-                                        if (localUser.status !== "DEACTIVATED") {
-                                            await handleToggleStatus("DEACTIVATED");
+                                    // onClick={() => {
+                                    //     if (localUser.status !== "DEACTIVATED") {
+                                    //         setShowDeactivateReasonModal(true);
+                                    //     }
+                                    //     setShowActionDropdown(false);
+                                    // }}
+                                     onClick={(e) => {
+                                        e.stopPropagation(); // prevent dropdown from re-triggering
+                                        if (!showDeactivateReasonModal && localUser.status !== "DEACTIVATED") {
+                                        setShowDeactivateReasonModal(true);
                                         }
-                                        setShowActionDropdown(false);
+                                        // setShowActionDropdown(false);
                                     }}
                                     disabled={localUser.status === "DEACTIVATED"}
                                     className={`w-full text-left px-4 py-2 text-sm ${localUser.status === "DEACTIVATED"
@@ -1258,6 +1293,45 @@ const ActivatePopup = ({ user, onClose, image }) => {
                                 >
                                     ❌ Deactivate
                                 </button>
+
+                    {/* Deactivate Reason Modal */}
+                    {showDeactivateReasonModal && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 h-100wh">
+                            <div className="bg-white rounded-lg shadow-lg p-6 w-80">
+                                <h2 className="text-lg font-bold text-black ">Deactivate User</h2>
+                                <label className="block text-sm font-semibold mb-1 text-black">Reason for deactivation</label>
+                                <textarea
+                                    value={deactivateReason}
+                                    onChange={e => setDeactivateReason(e.target.value)}
+                                    className="w-full border rounded px-3 py-2 mb-4 text-black"
+                                    placeholder="Enter reason"
+                                    rows={3}
+                                />
+                                <div className="flex justify-end gap-3">
+                                    <button
+                                        onClick={() => setShowDeactivateReasonModal(false)}
+                                        className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            if (deactivateReason.trim()) {
+                                                await handleToggleStatus("DEACTIVATED", deactivateReason);
+                                                setShowDeactivateReasonModal(false);
+                                                setDeactivateReason("");
+                                            }
+                                        }}
+                                        className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+                                        disabled={!deactivateReason.trim()}
+                                    >
+                                        Deactivate
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                             </div>
                         </div>
                     )}
@@ -1266,10 +1340,16 @@ const ActivatePopup = ({ user, onClose, image }) => {
 
             {(error || success) && (
                 <div
-                    className={`mt-4 text-center text-sm font-bold ${error ? "text-red-600" : "text-green-600"
-                        }`}
+                    className={`mt-4 text-center text-sm font-bold ${error ? "text-red-600" : "text-green-600"}`}
                 >
                     {error || success}
+                </div>
+            )}
+
+            {/* Show deactivate reason if user is deactivated */}
+            {localUser.status === "DEACTIVATED" && localUser.deactivate_reason && (
+                <div className="mt-2 text-center text-sm text-gray-700">
+                    <span className="font-bold text-red-600">Deactivation Reason:</span> {localUser.deactivate_reason}
                 </div>
             )}
             <ImageModal
