@@ -15,7 +15,7 @@ import BASE_URL from '../utils/Urls';
 import ImageModal from "./ImageModal";
 import KeypadModal from "./KeypadModal";
 
-const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "5094";
+const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "0852";
 
 const ActivatePopup = ({ user, onClose, image }) => {
     // const BASE_URL = `http://localhost:8080/api/v1`
@@ -37,7 +37,7 @@ const ActivatePopup = ({ user, onClose, image }) => {
     const nomineeName = user?.nominee_name || "";
     const nomineePhone = user?.nominee_phone_no || "";
     const profile_img = user?.profile_img || user?.profile_img || "";
-    const login_image = user?.login_image || "";
+    const login_image = user?.login_image ;
     const aadhar_front_img = user?.aadhar_front_img || "";
     const aadhar_back_img = user?.aadhar_back_img || activeimg;
     const pan_front_img = user?.pan_front_img || "";
@@ -428,49 +428,12 @@ const ActivatePopup = ({ user, onClose, image }) => {
                 background: "linear-gradient(to top right, #002E64, #FFFFFF)",
             }}
         >
-            {/* Status Dropdown */}
-            {/* <div className="w-full flex justify-end mb-2">
-                <label className="mr-2 font-bold text-sm text-gray-700">Account Status:</label>
-                <select
-                    value={status}
-                    onChange={handleStatusChange}
-                    disabled={statusLoading}
-                    className="px-3 py-1 rounded border border-gray-400 text-sm bg-white text-gray-800"
-                    style={{ minWidth: 120 }}
-                >
-                    <option value="ACTIVE">ACTIVE</option>
-                    <option value="DEACTIVATED">DEACTIVATED</option>
-                </select>
-                {statusLoading && <span className="ml-2 text-xs text-blue-500">Updating...</span>}
-            </div> */}
-
+           
             {/* Top Section */}
             <div className="flex justify-between items-center w-full mb-6 scale-90">
                 <div className="flex flex-col items-start">
 
-                    {/* Star Icon */}
-                    {/* <div className="relative flex items-center">
-                    <FaStar className="text-[#D9D9D9]" style={{ fontSize: '80px' }}/>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <FaMapMarkerAlt
-                            className="text-[#2DE005]" 
-                            size={20}  
-                        />
-                    </div>
-                    <div 
-                        className="absolute mt-14 w-[132px] h-[72px] flex items-center justify-center">
-                        <span className="text-[#43C701] font-bold text-xl">Activate</span>
-                    </div>
-                </div> */}
-                    {/* <div className="flex items-center gap-2 border border-green-200 ">
-                    <span className="text-sm font-semibold text-gray-700">Login Image</span>
-                    <img
-                        src={login_image || "https://via.placeholder.com/35x35"}
-                         onClick={() => handleImageClick(login_image)}
-                        alt="Login Icon"
-                        className="w-9 h-9 rounded-full border border-gray-400 object-cover"
-                    />
-                </div> */}
+                  
                     <div
                         className="group flex items-center justify-between gap-3 px-3 py-2 border border-green-300 
                         bg-gradient-to-r from-green-50 to-green-100 rounded-lg shadow-sm 
@@ -484,9 +447,8 @@ const ActivatePopup = ({ user, onClose, image }) => {
                         {/* Image */}
                         <div className="relative">
                             <img
-                                src={login_image || "https://via.placeholder.com/35x35"}
-                                // onClick={() => handleImageClick(login_image)}
-                                  onClick={() => handleImageClick(user?.login_image)}
+                                src={login_image || "https://avatar.iran.liara.run/public/1"}
+                                onClick={() => handleImageClick(user?.login_image || "https://avatar.iran.liara.run/public/1")}
                                 alt="Login Icon"
                                 className="w-10 h-10 rounded-full border-2 border-green-400 object-cover 
                                 transform group-hover:scale-110 group-hover:border-green-600 
@@ -502,22 +464,23 @@ const ActivatePopup = ({ user, onClose, image }) => {
 
                 </div>
 
-                {/* Right Side - Triangle with Unactivate */}
+                {/* Right Side - Unactivate */}
                 <div className="relative flex flex-col items-center scale-90">
                     {/* <div className="w-0 h-0 border-l-[42.5px] border-r-[42.5px] border-b-[136px] border-l-transparent border-r-transparent border-b-[#C86E6E]"></div> */}
                     <div
                         className={`mt-[-16px] rounded-full border-2 bg-white flex items-center justify-center px-4 py-2 
                         transition-all duration-300 ease-in-out shadow-sm hover:shadow-md cursor-default 
-                        ${user.login_image
-                        ? "border-green-500 hover:border-green-600"
+                        ${(user.status === "ACTIVE" && user.login_image === null)
+                        ? (user.login_image === null) ? "border-red-500 hover:border-red-600" : "border-green-500 hover:border-green-600"
                         : "border-red-500 hover:border-red-600"
                          }`}
                     >
                         <span
-                            className={`font-bold text-xl transition-colors duration-300 ${user.login_image ? "text-green-600" : "text-red-600"
+                            className={`font-bold text-xl transition-colors duration-300 ${(user.status === "ACTIVE") ? (user.login_image  ||  user.status === "ACTIVE" ? "text-green-600" : "text-red-600") : "text-red-600"
                                 }`}
                         >
-                            {user.login_image ? "ACTIVE" : "UNACTIVE"}
+                            {/* {user.login_image ? "ACTIVE" : "UNACTIVE"} */}
+                            {user.status === "ACTIVE" ? (user.login_image === null ? "UNACTIVE" : user.status) : user.status }
                         </span>
                     </div>
 
@@ -1163,70 +1126,13 @@ const ActivatePopup = ({ user, onClose, image }) => {
                     </span>
                 </button> */}
             </div>
-            {/* Dropdown Action Button */}
-            {/* <div className="relative mt-4">
-  <div className="inline-block text-left w-full">
-    <button
-      onClick={(e) => {
-        e.stopPropagation();
-        setShowActionDropdown((prev) => !prev);
-      }}
-      className="inline-flex justify-between items-center w-full px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-purple-700 to-pink-600 rounded-md shadow-md hover:opacity-90 focus:outline-none"
-    >
-      Account Status
-      <svg
-        className="w-5 h-5 ml-2 -mr-1"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
-    </button>
-
-    {showActionDropdown && (
-      <div
-        className="origin-top-right absolute right-0 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="py-1">
-          <button
-            onClick={() => handleStatusChange("ACTIVE")}
-            disabled={localUser.status === "ACTIVE"}
-            className={`w-full text-left px-4 py-2 text-sm ${
-              localUser.status === "ACTIVE"
-                ? "text-gray-400 cursor-not-allowed"
-                : "text-green-600 hover:bg-green-50 hover:text-green-800"
-            }`}
-          >
-            ✅ Activate
-          </button>
-
-          <button
-            onClick={() => handleStatusChange("DEACTIVATED")}
-            disabled={localUser.status === "DEACTIVATED"}
-            className={`w-full text-left px-4 py-2 text-sm ${
-              localUser.status === "DEACTIVATED"
-                ? "text-gray-400 cursor-not-allowed"
-                : "text-red-600 hover:bg-red-50 hover:text-red-800"
-            }`}
-          >
-            ❌ Deactivate
-          </button>
-        </div>
-      </div>
-    )}
-  </div>
-</div> */}
-
-            {/* Account Status Button */}
+           
             {/* Dropdown Action Button */}
             <div className="relative mt-4 flex flex-col items-center text-center">
                 <div className="text-sm font-semibold mb-1 text-gray-700">
                     {localUser.employer_name || "User"} - Account Status
                     {/* {localUser.status === "DEACTIVATED" && ( */}
-                        <span className="ml-2 text-red-600">({localUser.deactivate_reason})</span>
+                        <span className="ml-2 text-red-600">({localUser.status_code === -1 ? "DEACTIVATED" : user.login_image === null ? "UNACTIVE" : "ACTIVE" })</span>
                     {/* )} */}
                  </div>
                 <div className="inline-block text-center w-[611px]">
@@ -1272,12 +1178,7 @@ const ActivatePopup = ({ user, onClose, image }) => {
                                 </button>
 
                                 <button
-                                    // onClick={() => {
-                                    //     if (localUser.status !== "DEACTIVATED") {
-                                    //         setShowDeactivateReasonModal(true);
-                                    //     }
-                                    //     setShowActionDropdown(false);
-                                    // }}
+                                  
                                      onClick={(e) => {
                                         e.stopPropagation(); // prevent dropdown from re-triggering
                                         if (!showDeactivateReasonModal && localUser.status !== "DEACTIVATED") {
@@ -1296,7 +1197,7 @@ const ActivatePopup = ({ user, onClose, image }) => {
 
                     {/* Deactivate Reason Modal */}
                     {showDeactivateReasonModal && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 h-100wh">
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 h-full">
                             <div className="bg-white rounded-lg shadow-lg p-6 w-80">
                                 <h2 className="text-lg font-bold text-black ">Deactivate User</h2>
                                 <label className="block text-sm font-semibold mb-1 text-black">Reason for deactivation</label>
@@ -1348,8 +1249,8 @@ const ActivatePopup = ({ user, onClose, image }) => {
 
             {/* Show deactivate reason if user is deactivated */}
             {localUser.status === "DEACTIVATED" && localUser.deactivate_reason && (
-                <div className="mt-2 text-center text-sm text-gray-700">
-                    <span className="font-bold text-red-600">Deactivation Reason:</span> {localUser.deactivate_reason}
+                <div className="mt-2 mb-3 text-center text-sm text-white-700">
+                    <span className="font-bold text-white">Deactivation Reason:</span> {localUser.deactivate_reason}
                 </div>
             )}
             <ImageModal

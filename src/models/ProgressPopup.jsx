@@ -11,7 +11,7 @@ const ProgressPopup = ({ onClose }) => {
   const [showKeypad, setShowKeypad] = useState(false);
   const [showUserSelect, setShowUserSelect] = useState(false);
 
-  const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "5094";
+  const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "0852";
 
   // Editable tracker values
   const defaultSteps = [

@@ -1,195 +1,251 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { IoClose } from "react-icons/io5";
-import ConfirmModal from "./ConfirmModal";
-import { FaPaperPlane, FaUserAlt } from "react-icons/fa";
+import { FaPaperPlane } from "react-icons/fa";
 import axios from "axios";
 import BASE_URL from "../utils/Urls";
 import UserSelectModal from "./UserSelectModal";
+import ConfirmModal from "./ConfirmModal";
 
 export default function AccountStatementModal({ onClose }) {
-  const [showMain, setShowMain] = useState(true);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [showUserSelectModal, setShowUserSelectModal] = useState(false);
+  const TEMPLATE = "Hello {{name}}, your onboarding fee of Rs. {{amount}} is due.";
+  const [message, setMessage] = useState(TEMPLATE);
   const [users, setUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null); // State to hold the selected user object
-  const [message, setMessage] = useState("");
+  const [showUserSelectModal, setShowUserSelectModal] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Fetch users when the component mounts
+  const editorRef = useRef(null);
+  const lastValidMessageRef = useRef(TEMPLATE);
+
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        setLoading(true);
         const { data } = await axios.get(`${BASE_URL}/users/`);
         setUsers(data?.users || []);
-      } catch (error) {
-        console.error("❌ Failed to fetch users", error);
-        alert("❌ Failed to fetch users");
-      } finally {
-        setLoading(false);
+      } catch (err) {
+        console.error("❌ Failed to fetch users", err);
       }
     };
     fetchUsers();
+    // initial render of editor content
+    renderTemplateIntoEditor(TEMPLATE);
+    lastValidMessageRef.current = TEMPLATE;
   }, []);
 
-  const handleCloseAll = () => {
-    setShowMain(false);
-    setShowConfirm(false);
-    onClose?.();
+  // helper to create protected placeholder span
+  const makePlaceholderSpan = (name) => {
+    const span = document.createElement("span");
+    span.textContent = `{{${name}}}`;
+    span.setAttribute("contenteditable", "false");
+    span.dataset.placeholder = name; // mark it
+    // styling class (Tailwind style via className)
+    span.className =
+      "text-blue-600 font-semibold px-1 rounded hover:text-blue-800 transition-colors cursor-default";
+    return span;
   };
 
-  // Step 1: Handle user selection from the list
-  const handleUserClick = (user) => {
-    setSelectedUser(user);
-    // You can set a default message here if you like
-    setMessage(`Hello ${user.employer_name}, your onboarding fee of Rs. ${user.onboarding_fee} is due.`);
+  // Render template string into editor as text nodes + placeholder spans
+  const renderTemplateIntoEditor = (tpl) => {
+    if (!editorRef.current) return;
+    const editor = editorRef.current;
+    // clear
+    while (editor.firstChild) editor.removeChild(editor.firstChild);
+
+    // split by placeholders keeping them
+    const parts = tpl.split(/(\{\{name\}\}|\{\{amount\}\})/g);
+    parts.forEach((part) => {
+      if (part === "{{name}}") {
+        editor.appendChild(makePlaceholderSpan("name"));
+      } else if (part === "{{amount}}") {
+        editor.appendChild(makePlaceholderSpan("amount"));
+      } else {
+        // regular text node
+        editor.appendChild(document.createTextNode(part));
+      }
+    });
   };
 
-  // Step 2: Go to the UserSelectModal after the message is ready
+  // parse editor DOM -> template string (placeholders become {{name}} etc)
+  const parseEditorToTemplate = () => {
+    if (!editorRef.current) return "";
+    let result = "";
+    const nodes = Array.from(editorRef.current.childNodes);
+    nodes.forEach((node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        result += node.textContent;
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node;
+        if (el.dataset && el.dataset.placeholder) {
+          result += `{{${el.dataset.placeholder}}}`;
+        } else {
+          // other element (fall back to its text)
+          result += el.textContent || "";
+        }
+      }
+    });
+    return result;
+  };
+
+  // onInput handler - update message, but protect placeholders
+  const handleInput = (e) => {
+    const newTpl = parseEditorToTemplate();
+
+    // ensure both placeholders are present; if not, revert to last valid state
+    if (!newTpl.includes("{{name}}") || !newTpl.includes("{{amount}}")) {
+      // revert editor to last valid HTML (keeps caret awkwardness to minimal)
+      renderTemplateIntoEditor(lastValidMessageRef.current);
+      // place caret at end - optional UX
+      placeCaretAtEnd(editorRef.current);
+      return;
+    }
+
+    // otherwise accept it
+    setMessage(newTpl);
+    lastValidMessageRef.current = newTpl;
+  };
+
+  // helper to place caret at end (small UX nicety when we revert)
+  const placeCaretAtEnd = (el) => {
+    if (!el) return;
+    el.focus();
+    if (typeof window.getSelection !== "undefined" && typeof document.createRange !== "undefined") {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  };
+
+  // open user select modal
   const handleSendClick = () => {
-    if (!message.trim()) {
-      alert("⚠️ Please enter a message before sending");
+    if (!message || !message.trim()) {
+      alert("⚠️ Please enter a message before sending.");
       return;
     }
     setShowUserSelectModal(true);
   };
 
-  // Step 3: After selecting recipients, actually send the notification
-  const handleUserSelectSubmit = async (users) => {
+  // send personalized notifications (one request per user to match backend)
+  const handleUserSelectSubmit = async (selectedIds) => {
     setShowUserSelectModal(false);
-    
-    // Use the selected user's onboarding fee
-    const amount = selectedUser.onboarding_fee;
-    const finalMessage = message.replace(/{{amount}}/g, amount);
+    if (!selectedIds || selectedIds.length === 0) {
+      alert("⚠️ No users selected.");
+      return;
+    }
 
-    const payload = {
-      message: finalMessage,
-      // You can send to all selected users from the modal
-      user_ids: users,
-    };
-
+    const selectedUsers = users.filter((u) => selectedIds.includes(u.user_id));
     try {
       setLoading(true);
-      await axios.post(`${BASE_URL}/notifications/`, payload);
-      alert(`✅ Sent notification to ${users.length} user(s).`);
-      setMessage("");
-      setSelectedUser(null);
+      for (const u of selectedUsers) {
+        const personalized = message
+          .replace(/{{name}}/g, u.employer_name)
+          .replace(/{{amount}}/g, u.onboarding_fee);
+
+        await axios.post(`${BASE_URL}/notifications/`, {
+          message: personalized,
+          user_ids: [u.user_id],
+        });
+      }
+
+      alert(`✅ Sent personalized notification to ${selectedUsers.length} user(s).`);
       setShowConfirm(true);
-    } catch (error) {
-      console.error("❌ Failed to send notification", error);
+      setMessage(TEMPLATE);
+      lastValidMessageRef.current = TEMPLATE;
+      renderTemplateIntoEditor(TEMPLATE);
+    } catch (err) {
+      console.error("❌ Failed to send notification", err);
       alert("❌ Failed to send notification");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleCloseAll = () => {
+    setShowConfirm(false);
+    onClose?.();
+  };
+
+  // When message changes programmatically (only happens after send/reset), re-render editor
+  useEffect(() => {
+    // only re-render if editor content doesn't match message (prevents caret jumps while typing)
+    if (!editorRef.current) return;
+    const currentTpl = parseEditorToTemplate();
+    if (currentTpl !== message) renderTemplateIntoEditor(message);
+  }, [message]);
+
   return (
     <>
-      {showMain && (
-        <div className="fixed top-0 left-0 w-80 h-full flex items-start z-50">
-          <div
-            className="rounded-lg shadow-lg flex flex-col p-4 relative animate-[slideInLeft_0.4s_ease-out_forwards]"
-            style={{
-              width: "300px",
-              height: "500px",
-              background: "linear-gradient(to bottom right, #ffffff, #e9d5ff)",
-              border: "2px solid #7a5af5",
-            }}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h2
-                className="text-lg font-bold"
-                style={{
-                  color: "red",
-                  textShadow: "2px 2px 4px rgba(0,0,0,0.4)",
-                }}
-              >
-                Payment Due
-              </h2>
-              <button onClick={onClose} className="p-1 rounded bg-red-600">
-                <IoClose className="text-white text-2xl" />
-              </button>
+      <div className="fixed top-0 left-0 w-80 h-full flex items-start z-50">
+        <div
+          className="rounded-2xl shadow-2xl flex flex-col p-5 relative animate-[slideInLeft_0.4s_ease-out_forwards] hover:shadow-purple-400 transition-all"
+          style={{
+            width: "320px",
+            height: "480px",
+            background: "linear-gradient(to bottom right, #ffffff, #f0e8ff)",
+            border: "2px solid #8b5cf6",
+          }}
+        >
+          {/* Header */}
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-bold text-red-700 tracking-wide drop-shadow">
+              💸 Payment Due
+            </h2>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-full bg-red-600 hover:bg-red-700 transition-transform transform hover:scale-110"
+            >
+              <IoClose className="text-white text-2xl" />
+            </button>
+          </div>
+
+          {/* Editable Message */}
+          <div className="flex flex-col flex-grow">
+            <label className="font-semibold text-gray-700 mb-2">
+              Compose your message:
+            </label>
+
+            <div
+              ref={editorRef}
+              contentEditable={true}
+              onInput={handleInput}
+              className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white shadow-inner min-h-[250px] focus:outline-none focus:ring-2 focus:ring-indigo-400 overflow-y-auto leading-relaxed hover:border-indigo-400 transition"
+              style={{
+                whiteSpace: "pre-wrap",
+                fontFamily: "system-ui, sans-serif",
+              }}
+              spellCheck={false}
+            ></div>
+
+            <div className="text-xs text-gray-500 mt-3">
+               <span className="font-semibold text-purple-700">Ex:</span>{" "}
+              Hello
+              <code className="bg-gray-100 px-1 rounded text-blue-600">Raju</code> and{" "}
+              your onboarding fee of Rs. 
+              <code className="bg-gray-100 px-1 rounded text-blue-600">1000</code>{" "}is due.
             </div>
 
-            {/* Conditional Rendering based on selectedUser */}
-            {!selectedUser ? (
-              // Initial view: User list
-              <div className="flex-grow overflow-y-auto">
-                <h3 className="text-md font-semibold mb-2 text-gray-800">
-                  Select a User
-                </h3>
-                {loading ? (
-                  <p className="text-center text-gray-500">Loading users...</p>
-                ) : (
-                  <ul className="space-y-2">
-                    {users.map((user) => (
-                      <li
-                        key={user.user_id}
-                        onClick={() => handleUserClick(user)}
-                        className="p-3 border rounded-lg bg-white shadow-sm hover:bg-gray-100 cursor-pointer transition flex items-center gap-3"
-                      >
-                        <FaUserAlt className="text-purple-500" />
-                        <div>
-                          <p className="font-semibold text-gray-700">
-                            {user.employer_name}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            ID: {user.user_id}
-                          </p>
-                          <p className="text-sm font-bold text-red-500">
-                            Rs. {user.onboarding_fee}
-                          </p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ) : (
-              // Second view: Payment details and message input
-              <>
-                <div className="text-center mb-6 text-gray-700 font-mono">
-                  <span className="text-gray-600">Payment for </span>
-                  <span className="text-red-600 font-bold">
-                    {selectedUser.employer_name}
-                  </span>
-                  <span className="text-gray-600"> is due.</span>
-                  <br />
-                  <span className="text-red-600 font-bold">
-                    [₹{selectedUser.onboarding_fee}]
-                  </span>
-                </div>
-
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Enter message..."
-                  className="w-full p-2 border rounded text-sm mb-3 min-h-[315px]"
-                />
-
-                <div
-                  onClick={handleSendClick}
-                  className="bottom-[20px] left-3/4 -translate-x-1/2 absolute"
-                >
-                  <button
-                    className="flex items-center gap-2 text-white font-bold py-1 px-4 rounded-full"
-                    style={{
-                      background:
-                        "linear-gradient(to right, #5b0e2d, #a83279)",
-                      border: "2px solid gold",
-                      boxShadow: "0px 2px 5px rgba(0,0,0,0.3)",
-                    }}
-                    disabled={loading}
-                  >
-                    {loading ? "Sending..." : "SEND"}
-                    <FaPaperPlane className="w-4 h-4" />
-                  </button>
-                </div>
-              </>
-            )}
+            {/* Send Button */}
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={handleSendClick}
+                disabled={loading}
+                // className="flex items-center gap-2 text-white font-semibold py-2.5 px-6 rounded-full shadow-lg transition-all hover:shadow-indigo-500/50 hover:scale-105"
+               className="flex items-center gap-2 text-white font-bold py-2.5 px-6 rounded-full shadow-lg transition-all hover:scale-105"
+                               style={{
+                                 background: "linear-gradient(to right, #5b0e2d, #a83279)",
+                                 border: "2px solid gold",
+                                 boxShadow: "0px 2px 5px rgba(0,0,0,0.3)",
+                               }}
+              >
+                {loading ? "Sending..." : "Select Users & Send"}
+                <FaPaperPlane className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
-      )}
+      </div>
 
       {showUserSelectModal && (
         <UserSelectModal
@@ -199,11 +255,270 @@ export default function AccountStatementModal({ onClose }) {
       )}
 
       {showConfirm && (
-        <ConfirmModal
-          onYes={handleCloseAll}
-          onNo={() => setShowConfirm(false)}
-        />
+        <ConfirmModal onYes={handleCloseAll} onNo={() => setShowConfirm(false)} />
       )}
     </>
   );
 }
+
+// import React, { useState, useEffect, useRef } from "react";
+// import { IoClose } from "react-icons/io5";
+// import { FaPaperPlane } from "react-icons/fa";
+// import axios from "axios";
+// import BASE_URL from "../utils/Urls";
+// import UserSelectModal from "./UserSelectModal";
+// import ConfirmModal from "./ConfirmModal";
+
+// export default function AccountStatementModal({ onClose }) {
+//   const TEMPLATE = "Hello {{name}}, your onboarding fee of Rs. {{amount}} is due.";
+//   const [message, setMessage] = useState(TEMPLATE);
+//   const [users, setUsers] = useState([]);
+//   const [showUserSelectModal, setShowUserSelectModal] = useState(false);
+//   const [showConfirm, setShowConfirm] = useState(false);
+//   const [loading, setLoading] = useState(false);
+
+//   const editorRef = useRef(null);
+//   const lastValidMessageRef = useRef(TEMPLATE);
+
+//   useEffect(() => {
+//     const fetchUsers = async () => {
+//       try {
+//         const { data } = await axios.get(`${BASE_URL}/users/`);
+//         setUsers(data?.users || []);
+//       } catch (err) {
+//         console.error("❌ Failed to fetch users", err);
+//       }
+//     };
+//     fetchUsers();
+//     // initial render of editor content
+//     renderTemplateIntoEditor(TEMPLATE);
+//     lastValidMessageRef.current = TEMPLATE;
+//   }, []);
+
+//   // helper to create protected placeholder span
+//   const makePlaceholderSpan = (name) => {
+//     const span = document.createElement("span");
+//     span.textContent = `{{${name}}}`;
+//     span.setAttribute("contenteditable", "false");
+//     span.dataset.placeholder = name; // mark it
+//     // styling class (Tailwind style via className)
+//     span.className =
+//       "text-blue-600 font-semibold px-1 rounded hover:text-blue-800 transition-colors cursor-default";
+//     return span;
+//   };
+
+//   // Render template string into editor as text nodes + placeholder spans
+//   const renderTemplateIntoEditor = (tpl) => {
+//     if (!editorRef.current) return;
+//     const editor = editorRef.current;
+//     // clear
+//     while (editor.firstChild) editor.removeChild(editor.firstChild);
+
+//     // split by placeholders keeping them
+//     const parts = tpl.split(/(\{\{name\}\}|\{\{amount\}\})/g);
+//     parts.forEach((part) => {
+//       if (part === "{{name}}") {
+//         editor.appendChild(makePlaceholderSpan("name"));
+//       } else if (part === "{{amount}}") {
+//         editor.appendChild(makePlaceholderSpan("amount"));
+//       } else {
+//         // regular text node
+//         editor.appendChild(document.createTextNode(part));
+//       }
+//     });
+//   };
+
+//   // parse editor DOM -> template string (placeholders become {{name}} etc)
+//   const parseEditorToTemplate = () => {
+//     if (!editorRef.current) return "";
+//     let result = "";
+//     const nodes = Array.from(editorRef.current.childNodes);
+//     nodes.forEach((node) => {
+//       if (node.nodeType === Node.TEXT_NODE) {
+//         result += node.textContent;
+//       } else if (node.nodeType === Node.ELEMENT_NODE) {
+//         const el = node;
+//         if (el.dataset && el.dataset.placeholder) {
+//           result += `{{${el.dataset.placeholder}}}`;
+//         } else {
+//           // other element (fall back to its text)
+//           result += el.textContent || "";
+//         }
+//       }
+//     });
+//     return result;
+//   };
+
+//   // onInput handler - update message, but protect placeholders
+//   const handleInput = (e) => {
+//     const newTpl = parseEditorToTemplate();
+
+//     // ensure both placeholders are present; if not, revert to last valid state
+//     if (!newTpl.includes("{{name}}") || !newTpl.includes("{{amount}}")) {
+//       // revert editor to last valid HTML (keeps caret awkwardness to minimal)
+//       renderTemplateIntoEditor(lastValidMessageRef.current);
+//       // place caret at end - optional UX
+//       placeCaretAtEnd(editorRef.current);
+//       return;
+//     }
+
+//     // otherwise accept it
+//     setMessage(newTpl);
+//     lastValidMessageRef.current = newTpl;
+//   };
+
+//   // helper to place caret at end (small UX nicety when we revert)
+//   const placeCaretAtEnd = (el) => {
+//     if (!el) return;
+//     el.focus();
+//     if (typeof window.getSelection !== "undefined" && typeof document.createRange !== "undefined") {
+//       const range = document.createRange();
+//       range.selectNodeContents(el);
+//       range.collapse(false);
+//       const sel = window.getSelection();
+//       sel.removeAllRanges();
+//       sel.addRange(range);
+//     }
+//   };
+
+//   // open user select modal
+//   const handleSendClick = () => {
+//     if (!message || !message.trim()) {
+//       alert("⚠️ Please enter a message before sending.");
+//       return;
+//     }
+//     setShowUserSelectModal(true);
+//   };
+
+//   // send personalized notifications (one request per user to match backend)
+//   const handleUserSelectSubmit = async (selectedIds) => {
+//     setShowUserSelectModal(false);
+//     if (!selectedIds || selectedIds.length === 0) {
+//       alert("⚠️ No users selected.");
+//       return;
+//     }
+
+//     const selectedUsers = users.filter((u) => selectedIds.includes(u.user_id));
+//     try {
+//       setLoading(true);
+//       for (const u of selectedUsers) {
+//         const personalized = message
+//           .replace(/{{name}}/g, u.employer_name)
+//           .replace(/{{amount}}/g, u.onboarding_fee);
+
+//         await axios.post(`${BASE_URL}/notifications/`, {
+//           message: personalized,
+//           user_ids: [u.user_id],
+//         });
+//       }
+
+//       alert(`✅ Sent personalized notification to ${selectedUsers.length} user(s).`);
+//       setShowConfirm(true);
+//       setMessage(TEMPLATE);
+//       lastValidMessageRef.current = TEMPLATE;
+//       renderTemplateIntoEditor(TEMPLATE);
+//     } catch (err) {
+//       console.error("❌ Failed to send notification", err);
+//       alert("❌ Failed to send notification");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const handleCloseAll = () => {
+//     setShowConfirm(false);
+//     onClose?.();
+//   };
+
+//   // When message changes programmatically (only happens after send/reset), re-render editor
+//   useEffect(() => {
+//     // only re-render if editor content doesn't match message (prevents caret jumps while typing)
+//     if (!editorRef.current) return;
+//     const currentTpl = parseEditorToTemplate();
+//     if (currentTpl !== message) renderTemplateIntoEditor(message);
+//   }, [message]);
+
+//   return (
+//     <>
+//       <div className="fixed top-0 left-0 w-80 h-full flex items-start z-50">
+//         <div
+//           className="rounded-2xl shadow-2xl flex flex-col p-5 relative animate-[slideInLeft_0.4s_ease-out_forwards] hover:shadow-purple-400 transition-all"
+//           style={{
+//             width: "320px",
+//             height: "480px",
+//             background: "linear-gradient(to bottom right, #ffffff, #f0e8ff)",
+//             border: "2px solid #8b5cf6",
+//           }}
+//         >
+//           {/* Header */}
+//           <div className="flex justify-between items-center mb-4">
+//             <h2 className="text-lg font-bold text-red-700 tracking-wide drop-shadow">
+//               💸 Payment Due
+//             </h2>
+//             <button
+//               onClick={onClose}
+//               className="p-1.5 rounded-full bg-red-600 hover:bg-red-700 transition-transform transform hover:scale-110"
+//             >
+//               <IoClose className="text-white text-2xl" />
+//             </button>
+//           </div>
+
+//           {/* Editable Message */}
+//           <div className="flex flex-col flex-grow">
+//             <label className="font-semibold text-gray-700 mb-2">
+//               Compose your message:
+//             </label>
+
+//             <textarea
+//               ref={editorRef}
+//               contentEditable={true}
+//               onInput={handleInput}
+//               className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white shadow-inner min-h-[250px] focus:outline-none focus:ring-2 focus:ring-indigo-400 overflow-y-auto leading-relaxed hover:border-indigo-400 transition"
+//               style={{
+//                 whiteSpace: "pre-wrap",
+//                 fontFamily: "system-ui, sans-serif",
+//               }}
+//               spellCheck={false}
+//             ></textarea>
+
+//             <div className="text-xs text-gray-500 mt-3">
+              // <span className="font-semibold text-purple-700">Tip:</span>{" "}
+              // Hello
+              // <code className="bg-gray-100 px-1 rounded text-blue-600">{"{{name}}"}</code> and{" "}
+              // your onboarding fee of Rs. 
+              // <code className="bg-gray-100 px-1 rounded text-blue-600">{"{{amount}}"}</code>{" "}is due.
+//             </div>
+
+//             {/* Send Button */}
+//             <div className="flex justify-center mt-6">
+//               <button
+//                 onClick={handleSendClick}
+//                 disabled={loading}
+//                 className="flex items-center gap-2 text-white font-semibold py-2.5 px-6 rounded-full shadow-lg transition-all hover:shadow-indigo-500/50 hover:scale-105"
+//                 style={{
+//                   background:
+//                     "linear-gradient(135deg, #6d28d9, #8b5cf6, #a855f7)",
+//                   border: "1px solid #c084fc",
+//                 }}
+//               >
+//                 {loading ? "Sending..." : "Select Users & Send"}
+//                 <FaPaperPlane className="w-4 h-4" />
+//               </button>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+
+//       {showUserSelectModal && (
+//         <UserSelectModal
+//           onClose={() => setShowUserSelectModal(false)}
+//           onSubmit={handleUserSelectSubmit}
+//         />
+//       )}
+
+//       {showConfirm && (
+//         <ConfirmModal onYes={handleCloseAll} onNo={() => setShowConfirm(false)} />
+//       )}
+//     </>
+//   );
+// }

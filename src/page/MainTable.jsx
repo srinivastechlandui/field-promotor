@@ -28,7 +28,7 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {}, onTodayTotals
   const [editPhone, setEditPhone] = useState("");
   const [editLoading, setEditLoading] = useState(false);
   
-  const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "5094";
+  const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "0852";
   // Track accounts whose Payment Due was ended
  const [endedPaymentDueAccounts, setEndedPaymentDueAccounts] = useState(new Set());
 
@@ -243,7 +243,7 @@ const endLivePayout = async (user_id) => {
         if (res.data && res.data.users) {
           const formattedUsers = res.data.users.map((user) => ({
             profile_img: user.profile_img || "https://avatar.iran.liara.run/public/1",
-            login_image: user.login_image || "https://via.placeholder.com/35x35",
+            login_image: user.login_image ,
             user_id: user.user_id,
             email: user.email || "",
             phone_number: user.phone_number,
@@ -628,7 +628,8 @@ const todayGroupTotals = Object.entries(groupBy(tableData, "group")).reduce(
                                 }`}
                             >
                               {(row.status_code === 5 && row.status === "UNFILLED" && row.approved.length === 4
-                              ) ? "TRAINING" : row.status}
+                              ) ? "TRAINING" : (row.login_image === null && row.status === "ACTIVE"  ? "UNACTIVE" : row.status)}
+                              {/*  */}
                             </div>
                           </td>
                          <td className="px-6 py-4 whitespace-nowrap text-gray-900">

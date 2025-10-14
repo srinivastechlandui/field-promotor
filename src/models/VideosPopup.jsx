@@ -30,7 +30,7 @@ export default function VideosPopup({ onClose, user }) {
 
   const [collapsedGroups, setCollapsedGroups] = useState({}); // New state for collapsed groups
 
-  const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "5094";
+  const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "0852";
 
   // ---- FETCH ALL USERS & VIDEOS ----
   const fetchAllUsers = async () => {
