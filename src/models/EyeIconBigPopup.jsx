@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { FaEye } from "react-icons/fa";
 import car from "../Assets/car.jpg";
+import hook from "../Assets/hook.png";
 import KeypadModal from "./KeypadModal";
 import ConfirmModal from "./ConfirmModal";
 import axios from "axios";
 import BankDetailsModal from "./BankDetailsModel";
 import AccessModal from "./AccessModal"
 import BASE_URL from "../utils/Urls";
-// const BASE_URL ="http://localhost:8080/api/v1"
+import PasswordManagementModal from "./PasswordManagementModal";
+
 export default function EyeIconBigPopup({user, onClose }) {
-  console.log("usersticket",user)
+  // console.log("usersticket",user)
   const [showKeypad, setShowKeypad] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showMain, setShowMain] = useState(true);
   const [bankDetails, setBankDetails] = useState([]);
   const [selectedBank, setSelectedBank] = useState(null);
+  // const [showPasswordModal, setShowPasswordModal] = useState(false);
   // Accept editedAccountsCount and editedAccountsBankedEarnings from props
   const [stats, setStats] = useState({
     unfilled: 0,
@@ -33,7 +36,25 @@ export default function EyeIconBigPopup({user, onClose }) {
   // const editedPaymentDueCount = user?.todayPaymentDueCount ?? 0;
   const [showAccess, setShowAccess] = useState(false);
 
-  const SECONDARY_LOCK = process.env.SECONDARY_LOCK || "2580";
+  // const SECONDARY_LOCK = process.env.SECONDARY_LOCK || "2580";
+
+  const [lockLoaded, setLockLoaded] = useState(false);
+    // ✅ Fetch lock info from backend (just to confirm backend has it)
+    useEffect(() => {
+      const fetchLock = async () => {
+        try {
+          const res = await axios.get(`${BASE_URL}/locks/`);
+          if (res.data?.lock) {
+            console.log("🔐 Primary lock found:", res.data.lock);
+            setLockLoaded(true);
+          }
+        } catch (err) {
+          console.error("❌ Failed to fetch primary lock:", err);
+        }
+      };
+      fetchLock();
+    }, []);
+
 
   // ✅ Fetch users and compute stats
   useEffect(() => {
@@ -142,6 +163,22 @@ export default function EyeIconBigPopup({user, onClose }) {
     setShowConfirm(false);
     onClose?.();
   };
+
+
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [pressTimer, setPressTimer] = useState(null);
+
+  const handleMouseDown = () => {
+    const timer = setTimeout(() => {
+      setShowPasswordModal(true);
+    }, 2000); // 2 seconds hold
+    setPressTimer(timer);
+  };
+
+  const handleMouseUp = () => {
+    clearTimeout(pressTimer);
+  };
+
   return (
     <>
       {showMain && (
@@ -296,6 +333,17 @@ export default function EyeIconBigPopup({user, onClose }) {
               >
                 <span className="font-bold text-green-600">Access</span>
               </div>
+
+               <div
+                  onMouseDown={handleMouseDown}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                  className="cursor-pointer border-4 border-green-500 rounded-2xl bg-white px-5 h-[40px] flex items-center justify-center -translate-x-[10px] translate-y-3 mt-1 opacity-10 hover:opacity-50"
+                >
+                  <img src={hook} alt="hook" className="w-10 h-8" />
+                </div>
+
+
               {/* Due Section */}
               <div className="border-4 border-red-500 rounded-2xl bg-white px-5 h-[40px] flex items-center justify-center -translate-x-[20px] translate-y-3">
                 <span className="font-bold text-red-500 mr-2">DUE</span>
@@ -308,6 +356,10 @@ export default function EyeIconBigPopup({user, onClose }) {
         </div>
       )}
       {showAccess && <AccessModal onClose={() => setShowAccess(false)} />}
+      {showPasswordModal && (
+        <PasswordManagementModal onClose={() => setShowPasswordModal(false)} />
+      )}
+
       {selectedBank && (
         <BankDetailsModal
           bank={selectedBank}
@@ -322,7 +374,8 @@ export default function EyeIconBigPopup({user, onClose }) {
       )}
       {showKeypad && (
         <KeypadModal
-          lockCode={SECONDARY_LOCK}
+          // lockCode={SECONDARY_LOCK}
+          type="primary"
           onGoClick={() => {
             setShowConfirm(true);
             setShowKeypad(false);

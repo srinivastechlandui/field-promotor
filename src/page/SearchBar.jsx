@@ -4,7 +4,7 @@ import axios from "axios";
 import BASE_URL from "../utils/Urls"
 
 const SearchBar = ({ searchText, setSearchText }) => {
-  // const BASE_URL = "http://localhost:8080/api/v1"; // for testing purpose
+ 
   const [showModal, setShowModal] = useState(false);
   const [groups, setGroups] = useState([]);
   const [newGroup, setNewGroup] = useState("");

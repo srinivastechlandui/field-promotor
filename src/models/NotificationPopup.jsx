@@ -103,43 +103,13 @@ export default function NotificationPopup({ onClose }) {
               placeholder="Type your notification message here..."
             />
 
-            {/* Select Users Button */}
-            {/* <div className="flex justify-center align-left mb-4">
-              <button
-                onClick={handleOpenUserSelect}
-                className="flex items-center gap-2 text-white font-bold py-2 px-4 rounded-full"
-                style={{
-                  background: "linear-gradient(to right, #5b0e2d, #a83279)",
-                  border: "2px solid gold",
-                  boxShadow: "0px 2px 5px rgba(0,0,0,0.3)",
-                }}
-              >
-                <FaUserPlus /> Select Users ({selectedUsers.length})
-              </button>
-            </div> */}
-
+           
             {/* Empty lines (for visual spacing) */}
             {Array.from({ length: emptyLines }).map((_, idx) => (
               <div key={idx} className="absolute border-b-4 border-white my-2"></div>
             ))}
 
-            {/* Send button */}
-            {/* <div className="absolute bottom-[60px] left-3/4 -translate-x-1/2">
-              <button
-                onClick={handleSendNotification}
-                disabled={loading}
-                className="flex items-center gap-2 text-white font-bold py-1 px-4 rounded-full disabled:opacity-50"
-                style={{
-                  background: "linear-gradient(to right, #5b0e2d, #a83279)",
-                  border: "2px solid gold",
-                  boxShadow: "0px 2px 5px rgba(0,0,0,0.3)",
-                }}
-              >
-                {loading ? "Sending..." : "SEND"}
-                {!loading && <FaPaperPlane className="w-4 h-4" />}
-              </button>
-            </div> */}
-
+          
               <div className="flex justify-between items-center mb-4">
               {/* Select Users Button (on the left) */}
               <button

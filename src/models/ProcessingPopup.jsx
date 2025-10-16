@@ -14,7 +14,7 @@ import BASE_URL from '../utils/Urls';
 
 
 export default function ProcessingPopup({ onClose, user = {} }) {
-    // const BASE_URL = "http://localhost:8080/api/v1"
+    
     const [currentPage, setCurrentPage] = useState("main");
     const [activeStep, setActiveStep] = useState(null);
     const [isClose, setIsClose] = useState(true);
@@ -118,7 +118,6 @@ const formatDateTime = (isoString) => {
         try {
             const response = await axios.post(
                 `${BASE_URL}/admin/coupon/${user.user_id}`,
-                // `http://localhost:8080/api/v1/admin/coupon/${user.user_id}`,
                 { coupon_code: couponCode }
             );
 

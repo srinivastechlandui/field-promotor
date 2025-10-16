@@ -15,10 +15,10 @@ import BASE_URL from '../utils/Urls';
 import ImageModal from "./ImageModal";
 import KeypadModal from "./KeypadModal";
 
-const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "0852";
+// const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "0852";
+ 
 
 const ActivatePopup = ({ user, onClose, image }) => {
-    // const BASE_URL = `http://localhost:8080/api/v1`
     // Status dropdown state
     const [status, setStatus] = useState(user?.status === "DEACTIVATED" ? "DEACTIVATED" : "ACTIVE");
     const [statusLoading, setStatusLoading] = useState(false);
@@ -70,6 +70,22 @@ const ActivatePopup = ({ user, onClose, image }) => {
     const [showActionDropdown, setShowActionDropdown] = useState(false);
     const [showDeactivateReasonModal, setShowDeactivateReasonModal] = useState(false);
     const [deactivateReason, setDeactivateReason] = useState("");
+    const [lockLoaded, setLockLoaded] = useState(false);
+    // ✅ Fetch lock info from backend (just to confirm backend has it)
+    useEffect(() => {
+      const fetchLock = async () => {
+        try {
+          const res = await axios.get(`${BASE_URL}/locks/`);
+          if (res.data?.lock) {
+            console.log("🔐 Primary lock found:", res.data.lock);
+            setLockLoaded(true);
+          }
+        } catch (err) {
+          console.error("❌ Failed to fetch primary lock:", err);
+        }
+      };
+      fetchLock();
+    }, []);
 
     useEffect(() => {
         setLocalUser(user);
@@ -430,7 +446,7 @@ const ActivatePopup = ({ user, onClose, image }) => {
         >
            
             {/* Top Section */}
-            <div className="flex justify-between items-center w-full mb-6 scale-90">
+            <div className="flex justify-between items-center w-full mb-6 scale-90 h-100">
                 <div className="flex flex-col items-start">
 
                   
@@ -936,7 +952,7 @@ const ActivatePopup = ({ user, onClose, image }) => {
                     {/* Keypad Modal for Bank Account Lock */}
                     {showBankLockModal && (
                         <KeypadModal
-                            lockCode={PRIMARY_LOCK}
+                           type="secondary"
                             onGoClick={handleBankAccountUnlockSuccess}
                             onClose={handleBankLockModalClose}
                         />

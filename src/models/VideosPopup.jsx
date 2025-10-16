@@ -8,7 +8,7 @@ import { IoClose } from "react-icons/io5";
 import BASE_URL from "../utils/Urls";
 
 export default function VideosPopup({ onClose, user }) {
-  // const BASE_URL = "http://localhost:8080/api/v1";
+  
   const [videos, setVideos] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [editingVideo, setEditingVideo] = useState(null);
@@ -29,8 +29,23 @@ export default function VideosPopup({ onClose, user }) {
   const [selectedGroup, setSelectedGroup] = useState("All");
 
   const [collapsedGroups, setCollapsedGroups] = useState({}); // New state for collapsed groups
-
-  const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "0852";
+  // const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "0852";
+  const [lockLoaded, setLockLoaded] = useState(false);
+  // ✅ Fetch lock info from backend (just to confirm backend has it)
+  useEffect(() => {
+    const fetchLock = async () => {
+      try {
+        const res = await axios.get(`${BASE_URL}/locks/`);
+        if (res.data?.lock) {
+          console.log("🔐 Primary lock found:", res.data.lock);
+          setLockLoaded(true);
+        }
+      } catch (err) {
+        console.error("❌ Failed to fetch primary lock:", err);
+      }
+    };
+    fetchLock();
+  }, []);
 
   // ---- FETCH ALL USERS & VIDEOS ----
   const fetchAllUsers = async () => {
@@ -387,7 +402,7 @@ export default function VideosPopup({ onClose, user }) {
       {/* Keypad Modal */}
       {showKeypad && (
         <KeypadModal
-          lockCode={PRIMARY_LOCK}
+          type="secondary" 
           onGoClick={() => {
             setShowKeypad(false);
             setShowConfirm(true);

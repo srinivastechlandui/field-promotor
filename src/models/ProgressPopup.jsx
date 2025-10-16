@@ -1,17 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaCheck, FaPaperPlane } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 import KeypadModal from "./KeypadModal";
 import UserSelectModal from "./UserSelectModal";
 import axios from "axios";
 import BASE_URL from "../utils/Urls";
-//  const BASE_URL = "http://localhost:8080/api/v1";
+
 const ProgressPopup = ({ onClose }) => {
   const [showMain, setShowMain] = useState(true);
   const [showKeypad, setShowKeypad] = useState(false);
   const [showUserSelect, setShowUserSelect] = useState(false);
-
-  const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "0852";
+ const [showConfirm, setShowConfirm] = useState(false);
 
   // Editable tracker values
   const defaultSteps = [
@@ -49,6 +48,25 @@ const ProgressPopup = ({ onClose }) => {
       console.error("❌ Failed to save progress", err);
     }
   };
+
+  const [collapsedGroups, setCollapsedGroups] = useState({}); // New state for collapsed groups
+    // const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "0852";
+    const [lockLoaded, setLockLoaded] = useState(false);
+    // ✅ Fetch lock info from backend (just to confirm backend has it)
+    useEffect(() => {
+      const fetchLock = async () => {
+        try {
+          const res = await axios.get(`${BASE_URL}/locks/`);
+          if (res.data?.lock) {
+            console.log("🔐 Primary lock found:", res.data.lock);
+            setLockLoaded(true);
+          }
+        } catch (err) {
+          console.error("❌ Failed to fetch primary lock:", err);
+        }
+      };
+      fetchLock();
+    }, []);
 
   return (
     <>
@@ -147,7 +165,7 @@ const ProgressPopup = ({ onClose }) => {
       {/* Keypad Modal */}
       {showKeypad && (
         <KeypadModal
-          lockCode={PRIMARY_LOCK}
+          type="secondary" 
           onGoClick={() => {
             setShowKeypad(false);
             setShowUserSelect(true);

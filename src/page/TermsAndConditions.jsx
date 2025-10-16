@@ -14,7 +14,23 @@ export default function TermsAndConditions() {
 
   const [showKeypad, setShowKeypad] = useState(false);
   const [unlocked, setUnlocked] = useState(false); 
-  const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "0852";
+  const [lockLoaded, setLockLoaded] = useState(false);
+  // const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "0852";
+  useEffect(() => {
+        const fetchLock = async () => {
+          try {
+            const res = await axios.get(`${BASE_URL}/locks/`);
+            if (res.data?.lock) {
+              console.log("🔐 Primary lock found:", res.data.lock);
+              setLockLoaded(true);
+            }
+          } catch (err) {
+            console.error("❌ Failed to fetch primary lock:", err);
+          }
+        };
+        fetchLock();
+      }, []);
+      
   useEffect(() => {
     const fetchTerms = async () => {
       try {
@@ -137,7 +153,8 @@ export default function TermsAndConditions() {
 
       {showKeypad && (
         <KeypadModal
-          lockCode={PRIMARY_LOCK}
+          // lockCode={PRIMARY_LOCK}
+          type="secondary" 
           onGoClick={unlockEdit}
           onClose={() => setShowKeypad(false)}
         />

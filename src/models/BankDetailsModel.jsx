@@ -4,7 +4,7 @@ import BASE_URL from "../utils/Urls";
 import KeypadModal from "./KeypadModal";  
 
 export default function BankDetailsModal({ bank, onClose, onUpdated }) {
-  // const BASE_URL ="http://localhost:8080/api/v1"
+
   const [accountNo, setAccountNo] = useState(bank.company_account_no || "");
   const [bankName, setBankName] = useState(bank.company_bank_name || "");
   const [ifscCode, setIfscCode] = useState(bank.ifsc_code || ""); // ✅ Add state for ifsc_code

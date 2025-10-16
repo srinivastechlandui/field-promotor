@@ -11,7 +11,6 @@ import KeypadModal from '../models/KeypadModal';
 import EyeIconBigPopup from '../models/EyeIconBigPopup';
 import BASE_URL from "../utils/Urls"
 
-// const BASE_URL = "http://localhost:8080/api/v1"
 const MainTable = ({ searchText, filterOption, userIdFilters = {}, onTodayTotals }) => {
   const [showEyeIconBigPopup, setShowEyeIconBigPopup] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,7 +27,23 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {}, onTodayTotals
   const [editPhone, setEditPhone] = useState("");
   const [editLoading, setEditLoading] = useState(false);
   
-  const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "0852";
+  // const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "0852";
+ const [lockLoaded, setLockLoaded] = useState(false);
+  // ✅ Fetch lock info from backend (just to confirm backend has it)
+  useEffect(() => {
+    const fetchLock = async () => {
+      try {
+        const res = await axios.get(`${BASE_URL}/locks`);
+        if (res.data?.lock) {
+          console.log("🔐 Primary lock found:", res.data.lock);
+          setLockLoaded(true);
+        }
+      } catch (err) {
+        console.error("❌ Failed to fetch primary lock:", err);
+      }
+    };
+    fetchLock();
+  }, []);
   // Track accounts whose Payment Due was ended
  const [endedPaymentDueAccounts, setEndedPaymentDueAccounts] = useState(new Set());
 
@@ -792,7 +807,8 @@ const todayGroupTotals = Object.entries(groupBy(tableData, "group")).reduce(
                   {/* Lock first */}
                   {editingLivePayoutUserId === row.user_id && showLivePayoutLock && (
                     <KeypadModal
-                      lockCode={PRIMARY_LOCK}
+                      // lockCode={PRIMARY_LOCK}
+                      type="secondary" 
                       onGoClick={() => unlockLivePayoutForm(row)}
                       onClose={() => {
                         setShowLivePayoutLock(false);
@@ -896,7 +912,8 @@ const todayGroupTotals = Object.entries(groupBy(tableData, "group")).reduce(
                             {/* Lock first */}
                             {editingPaymentDueUserId === row.user_id && showPaymentDueLock && (
                               <KeypadModal
-                                  lockCode={PRIMARY_LOCK}
+                                  // lockCode={PRIMARY_LOCK}
+                                  type="secondary" 
                                    onGoClick={() => unlockPaymentDueForm(row)}
                                   onClose={() => {
                                     setShowPaymentDueLock(false);
