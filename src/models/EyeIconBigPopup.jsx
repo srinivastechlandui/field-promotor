@@ -99,7 +99,7 @@ export default function EyeIconBigPopup({user, onClose }) {
           ).length,
 
           unverified: allUsers.filter(
-            (u) => u.status_code > 0 && u.status === "unfilled"
+            (u) => (u.status_code === 1 || u.status_code === 2 ||  u.status_code === 3 ||  u.status_code === 4) && u.status === "unfilled"
           ).length,
 
           training: allUsers.filter(
@@ -114,9 +114,9 @@ export default function EyeIconBigPopup({user, onClose }) {
 
           deactivate: allUsers.filter((u) => u.status_code === -1).length,
 
-          active: allUsers.filter((u) => u.status === "active").length,
+          active: allUsers.filter((u) => (u.status === "active" || u.status === "ACTIVE") && u.status_code === 6 && u.login_image !== null ).length,
 
-          inactive: allUsers.filter((u) => u.status === "inactive").length,
+          inactive: allUsers.filter((u) => u.status_code === 6 && (u.status === "active" || u.status === "ACTIVE")  && u.login_image === null).length,
 
           total: allUsers.length,
           totalBankEarnings: totalBankEarnings,

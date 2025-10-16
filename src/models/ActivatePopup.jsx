@@ -6,8 +6,6 @@ import activeimg from '../Assets/active-img.png';
 import camera from '../Assets/camera.png'
 import job from '../Assets/jonoprtunity.png'
 import green from '../Assets/green.png'
-import bank from '../Assets/bank.png'
-// import man from '../Assets/confused_man.png'
 import viewAccount from '../Assets/view-account.png'
 import Accountstmt from '../Assets/Account-stmt.png'
 import blue from '../Assets/purple-blue.png'
@@ -15,10 +13,10 @@ import BASE_URL from '../utils/Urls';
 import ImageModal from "./ImageModal";
 import KeypadModal from "./KeypadModal";
 
-// const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "0852";
  
 
 const ActivatePopup = ({ user, onClose, image }) => {
+    // const BASE_URL = "http://localhost:8080/api/v1"
     // Status dropdown state
     const [status, setStatus] = useState(user?.status === "DEACTIVATED" ? "DEACTIVATED" : "ACTIVE");
     const [statusLoading, setStatusLoading] = useState(false);
@@ -314,62 +312,6 @@ const ActivatePopup = ({ user, onClose, image }) => {
     };
 
 
-    // const [showActionDropdown, setShowActionDropdown] = useState(false);
-
-    // useEffect(() => {
-    //     if (user?.status_code === -1) {
-    //         setDeactivated(true);
-    //         setSuccess("✅ User is already deactivated");
-    //     }
-    // }, [user]);
-
-    // Deactivate user handler (dynamic endpoint)
-    // const handleDeactivate = async () => {
-    //     if (!window.confirm("Are you sure you want to deactivate this account?")) return;
-
-    //     try {
-    //         setLoading(true);
-    //         setError("");
-    //         setSuccess("");
-    //         const res = await axios.put(`${BASE_URL}/users/admin/status/${user.user_id}`);
-    //         if (res.data?.message) {
-    //             setSuccess(res.data.message);
-    //         } else {
-    //             setSuccess("✅ User deactivated successfully");
-    //         }
-    //         setDeactivated(true);
-    //     } catch (err) {
-    //         setError(
-    //             err.response?.data?.message ||
-    //             "❌ Failed to deactivate user"
-    //         );
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    // };
-
-    // const handleToggleStatus = async (status, reason = "") => {
-    //     try {
-    //         let payload = { status };
-    //         if (status === "DEACTIVATED" && reason) {
-    //             payload.reason = reason;
-    //         }
-    //         const response = await axios.put(
-    //             `${BASE_URL}/users/admin/status/${localUser.user_id}`,
-    //             payload
-    //         );
-    //         alert(response.data.message || `✅ User ${status.toLowerCase()} successfully`);
-    //         setLocalUser((prev) => ({
-    //             ...prev,
-    //             status: response.data.status,
-    //             status_code: response.data.status_code,
-    //             deactivate_reason: response.data.deactivate_reason || reason,
-    //         }));
-    //     } catch (err) {
-    //         alert(err.response?.data?.message || "❌ Failed to update status");
-    //     }
-    // };
-
     const handleToggleStatus = async (status, reason = "") => {
   try {
     let payload = { status };
@@ -448,15 +390,14 @@ const ActivatePopup = ({ user, onClose, image }) => {
             {/* Top Section */}
             <div className="flex justify-between items-center w-full mb-6 scale-90 h-100">
                 <div className="flex flex-col items-start">
-
-                  
                     <div
                         className="group flex items-center justify-between gap-3 px-3 py-2 border border-green-300 
                         bg-gradient-to-r from-green-50 to-green-100 rounded-lg shadow-sm 
                         hover:shadow-md transition-all duration-300 ease-in-out cursor-pointer"
-                        >
+                        style={{ minWidth: "180px", maxWidth: "220px" }} // Increased width
+                    >
                         {/* Label */}
-                        <span className="text-sm font-semibold text-gray-700 group-hover:text-green-700 transition-colors duration-300">
+                        <span className="text-sm font-semibold text-gray-700 group-hover:text-green-700 transition-colors duration-300 w-50">
                             Login Image
                         </span>
 
@@ -466,22 +407,16 @@ const ActivatePopup = ({ user, onClose, image }) => {
                                 src={login_image || "https://avatar.iran.liara.run/public/1"}
                                 onClick={() => handleImageClick(user?.login_image || "https://avatar.iran.liara.run/public/1")}
                                 alt="Login Icon"
-                                className="w-10 h-10 rounded-full border-2 border-green-400 object-cover 
+                                className="w-16 h-16 rounded-full border-2 border-green-400 object-cover 
                                 transform group-hover:scale-110 group-hover:border-green-600 
                                 transition-all duration-300 ease-in-out"
-                                // className="w-9 h-9 rounded-full border border-gray-400 object-cover"
+                                // Increased size from w-10 h-10 to w-16 h-16
                             />
-
-                            {/* Glow effect */}
-                            {/* <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-40 
-                             bg-green-300 blur-md transition-opacity duration-300"></div> */}
                         </div>
                     </div>
-
                 </div>
-
                 {/* Right Side - Unactivate */}
-                <div className="relative flex flex-col items-center scale-90">
+                <div className="relative flex flex-col items-center scale-90 ml-3">
                     {/* <div className="w-0 h-0 border-l-[42.5px] border-r-[42.5px] border-b-[136px] border-l-transparent border-r-transparent border-b-[#C86E6E]"></div> */}
                     <div
                         className={`mt-[-16px] rounded-full border-2 bg-white flex items-center justify-center px-4 py-2 

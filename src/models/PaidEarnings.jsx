@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { IoClose } from "react-icons/io5";
 import ConfirmModal from "./ConfirmModal";
 import { FaPaperPlane } from "react-icons/fa";
@@ -12,9 +12,80 @@ export default function PaidEarnings({ onClose, selectedUser }) {
   const [showUserSelect, setShowUserSelect] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState([]);
   // const [message, setMessage] = useState("");
-  const [message, setMessage] = useState(
-  "Hello, your paid earnings of ₹500 have been successfully processed. Thank you!"
-);
+  const TEMPLATE = "Hello, your paid earnings of ₹{{amount}} have been successfully processed. Thank you!";
+  const [message, setMessage] = useState(TEMPLATE);
+  const editorRef = useRef(null);
+  const lastValidMessageRef = useRef(TEMPLATE);
+  // Helper to create protected amount span
+  const makeAmountSpan = (amountText = "{{amount}}") => {
+    const span = document.createElement("span");
+    span.textContent = amountText;
+    span.setAttribute("contenteditable", "false");
+    span.dataset.placeholder = "amount";
+    span.className = "text-blue-600 font-semibold px-1 rounded bg-blue-50";
+    return span;
+  };
+
+  // Render template string into editor as text nodes + amount span
+  const renderTemplateIntoEditor = (tpl) => {
+    if (!editorRef.current) return;
+    const editor = editorRef.current;
+    while (editor.firstChild) editor.removeChild(editor.firstChild);
+    const parts = tpl.split(/(\{\{amount\}\})/g);
+    parts.forEach((part) => {
+      if (part === "{{amount}}") {
+        editor.appendChild(makeAmountSpan("{{amount}}"));
+      } else {
+        editor.appendChild(document.createTextNode(part));
+      }
+    });
+  };
+
+  // Parse editor DOM -> template string
+  const parseEditorToTemplate = () => {
+    if (!editorRef.current) return "";
+    let result = "";
+    const nodes = Array.from(editorRef.current.childNodes);
+    nodes.forEach((node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        result += node.textContent;
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node;
+        if (el.dataset && el.dataset.placeholder === "amount") {
+          result += "{{amount}}";
+        } else {
+          result += el.textContent || "";
+        }
+      }
+    });
+    return result;
+  };
+
+  // onInput handler - update message, but protect amount
+  const handleInput = (e) => {
+    const newTpl = parseEditorToTemplate();
+    if (!newTpl.includes("{{amount}}")) {
+      renderTemplateIntoEditor(lastValidMessageRef.current);
+      placeCaretAtEnd(editorRef.current);
+      return;
+    }
+    setMessage(newTpl);
+    lastValidMessageRef.current = newTpl;
+  };
+
+  // helper to place caret at end
+  const placeCaretAtEnd = (el) => {
+    if (!el) return;
+    el.focus();
+    if (typeof window.getSelection !== "undefined" && typeof document.createRange !== "undefined") {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  };
   const [loading, setLoading] = useState(false);
 
   const AMOUNT = 500; // const value
@@ -35,44 +106,59 @@ export default function PaidEarnings({ onClose, selectedUser }) {
     setShowUserSelect(true);
   };
 
-  // Step 2: after selecting recipients, send notification
-  const handleUserSelectSubmit = async (recipients) => {
-    setSelectedRecipients(recipients);
-    setShowUserSelect(false);
+ // Step 2: after selecting recipients, send notification
+const handleUserSelectSubmit = (recipients) => {
+  if (!recipients || recipients.length === 0) {
+    alert("⚠️ No users selected.");
+    return;
+  }
+  setSelectedRecipients(recipients);
+  setShowUserSelect(false);
+  setShowConfirm(true); // ask before sending
+};
 
-    const finalMessage = message.replace(/500/g, AMOUNT);
+// when user clicks "Yes" in ConfirmModal
+const handleConfirmYes = async () => {
+  if (!selectedRecipients.length) return;
 
-    const payload = {
-      message: finalMessage,
-      ...(recipients.length > 0 && { user_ids: recipients.map((u) => u.user_id) }),
-    };
-
-    try {
-      setLoading(true);
-      const { data } = await axios.post(`${BASE_URL}/notifications/`, payload);
-
-      if (data?.notification) {
-        alert(
-          `✅ Sent notification to ${
-            recipients.length > 0 ? "specific users" : "all users"
-          }`
-        );
-        setMessage("");
-        setSelectedRecipients([]);
-        setShowConfirm(true);
-      }
-    } catch (error) {
-      console.error("❌ Failed to send notification", error);
-      alert("❌ Failed to send notification");
-    } finally {
-      setLoading(false);
+  try {
+    setLoading(true);
+    for (const u of selectedRecipients) {
+      const personalized = message.replace(/\{\{amount\}\}/g, u.paidEarnings || AMOUNT);
+      await axios.post(`${BASE_URL}/notifications/`, {
+        message: personalized,
+        user_ids: [u.user_id],
+      });
     }
-  };
+    alert(`✅ Sent personalized notification to ${selectedRecipients.length} user(s).`);
+    setMessage(TEMPLATE);
+    setSelectedRecipients([]);
+    setShowConfirm(false);
+    onClose?.();
+  } catch (error) {
+    console.error("❌ Failed to send notification", error);
+    alert("❌ Failed to send notification");
+  } finally {
+    setLoading(false);
+  }
+};
 
+// when user clicks "No"
+const handleConfirmNo = () => {
+  setShowConfirm(false);
+};
+
+
+  // When message changes programmatically, re-render editor
+  useEffect(() => {
+    if (!editorRef.current) return;
+    const currentTpl = parseEditorToTemplate();
+    if (currentTpl !== message) renderTemplateIntoEditor(message);
+  }, [message]);
   return (
     <>
       {showMain && (
-        <div className="fixed top-0 left-0 w-80 h-full flex items-start z-50 ">
+        <div className="fixed top-0 left-0 w-full h-full flex items-start bg-black bg-opacity-40 z-50 ">
           <div
             className="rounded-lg shadow-lg flex flex-col p-4 relative animate-[slideInLeft_0.4s_ease-out_forwards]"
             style={{
@@ -92,7 +178,7 @@ export default function PaidEarnings({ onClose, selectedUser }) {
               >
                 Paid Earnings
               </h2>
-              <button onClick={onClose} className="p-1 rounded bg-red-600">
+              <button onClick={onClose} className="p-1.5 rounded-full bg-red-600 hover:bg-red-700 transition-transform transform hover:scale-110">
                 <IoClose className="text-white text-2xl" />
               </button>
             </div>
@@ -101,20 +187,28 @@ export default function PaidEarnings({ onClose, selectedUser }) {
             <div className="text-center mb-6 text-gray-700 font-mono">
               <span className="text-gray-600">######## </span>
               <span className="text-green-600 font-bold">
-                [₹{selectedUser?.onboarding_fee || AMOUNT}]
+                [₹{selectedUser?.paidEarnings || AMOUNT}]
               </span>
               <span className="text-gray-600"> ########</span>
             </div>
            
 
             {/* Message Input */}
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              // placeholder="Enter message... (use 500, it will be replaced with const value)"
-              placeholder={message}
-              className="w-full p-2 border rounded text-sm mb-3 min-h-[315px]"
-            />
+            <div className="mb-3">
+              <label className="font-semibold text-gray-700 mb-2 block">Compose your message:</label>
+              <div
+                ref={editorRef}
+                contentEditable={true}
+                onInput={handleInput}
+                className="w-full p-2 border rounded text-sm min-h-[250px] bg-white shadow-inner focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                style={{ whiteSpace: "pre-wrap", fontFamily: "system-ui, sans-serif" }}
+                spellCheck={false}
+              ></div>
+              <div className="text-xs text-gray-500 mt-2">
+                <span className="font-semibold text-purple-700">Ex:</span> Hello, your paid earnings of ₹<span className="text-blue-600 font-semibold px-1 rounded bg-blue-50">500</span> have been successfully processed. Thank you!
+              </div>
+            </div>
+  
 
             {/* Send Button */}
             <div
@@ -148,7 +242,7 @@ export default function PaidEarnings({ onClose, selectedUser }) {
 
       {/* ConfirmModal */}
       {showConfirm && (
-        <ConfirmModal onYes={handleCloseAll} onNo={() => setShowConfirm(false)} />
+        <ConfirmModal onYes={handleConfirmYes} onNo={handleConfirmNo} />
       )}
     </>
   );

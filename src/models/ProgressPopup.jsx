@@ -5,12 +5,14 @@ import KeypadModal from "./KeypadModal";
 import UserSelectModal from "./UserSelectModal";
 import axios from "axios";
 import BASE_URL from "../utils/Urls";
+import ConfirmModal from "./ConfirmModal";
 
 const ProgressPopup = ({ onClose }) => {
   const [showMain, setShowMain] = useState(true);
   const [showKeypad, setShowKeypad] = useState(false);
   const [showUserSelect, setShowUserSelect] = useState(false);
  const [showConfirm, setShowConfirm] = useState(false);
+const [selectedUserIds, setSelectedUserIds] = useState([]);
 
   // Editable tracker values
   const defaultSteps = [
@@ -67,6 +69,17 @@ const ProgressPopup = ({ onClose }) => {
       };
       fetchLock();
     }, []);
+    const handleConfirmYes = async () => {
+    if (!selectedUserIds.length) return;
+    await saveForUsers(selectedUserIds);
+    setShowConfirm(false);
+    setSelectedUserIds([]);
+  };
+
+    const handleConfirmNo = () => {
+      setShowConfirm(false);
+      setSelectedUserIds([]);
+    };
 
   return (
     <>
@@ -176,11 +189,22 @@ const ProgressPopup = ({ onClose }) => {
 
       {/* User Select Modal */}
       {showUserSelect && (
-        <UserSelectModal
+       <UserSelectModal
           onClose={() => setShowUserSelect(false)}
-          onSubmit={saveForUsers}
+          onSubmit={(userIds) => {
+            setSelectedUserIds(userIds);
+            setShowUserSelect(false);
+            setShowConfirm(true); // show confirm before API
+          }}
         />
       )}
+      {showConfirm && (
+        <ConfirmModal
+          onYes={handleConfirmYes}
+          onNo={handleConfirmNo}
+        />
+      )}
+
     </>
   );
 };

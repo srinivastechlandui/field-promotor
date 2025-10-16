@@ -109,12 +109,6 @@ const formatDateTime = (isoString) => {
             return;
         }
 
-        const validPattern = /^[a-eA-E0-9]+$/;
-        if (!validPattern.test(couponCode)) {
-            alert("⚠️ Coupon code must contain only letters (a-e) and numbers (0-9)");
-            return;
-        }
-
         try {
             const response = await axios.post(
                 `${BASE_URL}/admin/coupon/${user.user_id}`,

@@ -8,11 +8,9 @@ import UnVerifiedPopup from "../models/UnverifiedPopup";
 import ProcessingPopup from "../models/ProcessingPopup";
 import  FilterBar from "./FilterBar";
 import KeypadModal from '../models/KeypadModal';
-import EyeIconBigPopup from '../models/EyeIconBigPopup';
 import BASE_URL from "../utils/Urls"
 
 const MainTable = ({ searchText, filterOption, userIdFilters = {}, onTodayTotals }) => {
-  const [showEyeIconBigPopup, setShowEyeIconBigPopup] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isActivatePopupOpen, setIsActivatePopupOpen] = useState(false);
   const [isUnFilledPopupOpen, setIsUnFilledPopupOpen] = useState(false);
@@ -29,7 +27,7 @@ const MainTable = ({ searchText, filterOption, userIdFilters = {}, onTodayTotals
   
   // const PRIMARY_LOCK = process.env.PRIMARY_LOCK || "0852";
  const [lockLoaded, setLockLoaded] = useState(false);
-  // ✅ Fetch lock info from backend (just to confirm backend has it)
+  
   useEffect(() => {
     const fetchLock = async () => {
       try {
@@ -392,8 +390,7 @@ const endLivePayout = async (user_id) => {
     }, {});
   };
 
-  // -----------------------------
-  // Filtering logic (search remains untouched)
+  // Filtering logic 
   // -----------------------------
   let filteredData = tableData;
 
@@ -431,13 +428,40 @@ const endLivePayout = async (user_id) => {
 
   // status filter
   if (filters.statuses && Array.isArray(filters.statuses) && filters.statuses.length > 0) {
-    filteredData = filteredData.filter(row => filters.statuses.includes(row.status));
+    filteredData = filteredData.filter(row => {
+      return filters.statuses.some(status => {
+        // TRAINING: status_code 5 and status 'UNFILLED'
+        if (status === 'ACTIVE') {
+          return row.status_code === 6 && row.status === 'ACTIVE'  && row.login_image !== null;
+        }
+        if (status === 'UNACTIVE') {
+          return row.status_code === 6 && row.status === 'ACTIVE'  && row.login_image === null;
+        }
+        if (status === 5 || status === 'TRAINING') {
+          return row.status_code === 5 && row.status === 'UNFILLED';
+        }
+        // UNVERIFIED: status_code 1,2,3,4 and status 'UNFILLED'
+        if (status === 1 || status === 2 || status === 3 || status === 4 || status === 'UNVERIFIED') {
+          return [1,2,3,4].includes(row.status_code) && row.status === 'UNFILLED';
+        }
+        // UNFILLED: status_code 0 and status 'UNFILLED'
+        if (status === 0 || status === 'UNFILLED') {
+          return row.status_code === 0 && row.status === 'UNFILLED';
+        }
+        // Otherwise, match status string or status_code
+        if (typeof status === 'number' || !isNaN(Number(status))) {
+          return row.status_code === Number(status);
+        }
+        return row.status === status;
+      });
+    });
   }
-
+   
   // numeric/boolean filters
   if (filters.bankEarned) {
     filteredData = filteredData.filter(row => parseAmount(row.bankedEarnings) > 0);
   }
+ 
   if (filters.paidEarnings) {
     filteredData = filteredData.filter(row => parseAmount(row.paidEarnings) > 0);
   }
@@ -454,7 +478,13 @@ const endLivePayout = async (user_id) => {
     filteredData = filteredData.filter(row => (ticketCounts[row.user_id] || 0) > 0);
   }
 
-  // Sorting: joined date
+  
+  // Sorting: No Of Account Created (by updated_date)
+  if (filters.accountsCreatedSort === "new") {
+    filteredData = filteredData.slice().sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+  } else if (filters.accountsCreatedSort === "old") {
+    filteredData = filteredData.slice().sort((a, b) => new Date(a.updated_at) - new Date(b.updated_at));
+  }
   if (filters.joinedSort === "new") {
     filteredData = filteredData.slice().sort((a, b) => new Date(b.joinedDate) - new Date(a.joinedDate));
   } else if (filters.joinedSort === "old") {
@@ -490,11 +520,7 @@ const endLivePayout = async (user_id) => {
   };
 
 
-
-
-  // Helper to sum a column
-const sumBy = (rows, key) =>
-  rows.reduce((sum, row) => sum + Number(row[key] || 0), 0);
+ 
 // Helper: check if a date is today
 const isToday = (dateString) => {
   if (!dateString) return false;

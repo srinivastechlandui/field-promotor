@@ -126,41 +126,57 @@ export default function AccountStatementModal({ onClose }) {
     }
     setShowUserSelectModal(true);
   };
-
+  const [selectedRecipients, setSelectedRecipients] = useState([]);
   // send personalized notifications (one request per user to match backend)
-  const handleUserSelectSubmit = async (selectedIds) => {
-    setShowUserSelectModal(false);
-    if (!selectedIds || selectedIds.length === 0) {
-      alert("⚠️ No users selected.");
-      return;
+  const handleUserSelectSubmit = (selectedIds) => {
+  setShowUserSelectModal(false);
+  if (!selectedIds || selectedIds.length === 0) {
+    alert("⚠️ No users selected.");
+    return;
+  }
+
+  // save selected users for confirmation
+  const selectedUsers = users.filter((u) => selectedIds.includes(u.user_id));
+  setSelectedRecipients(selectedUsers);
+
+  // open confirmation modal before sending
+  setShowConfirm(true);
+};
+const handleConfirmYes = async () => {
+  if (!selectedRecipients.length) return;
+
+  try {
+    setLoading(true);
+    for (const u of selectedRecipients) {
+      const personalized = message
+        .replace(/{{name}}/g, u.employer_name)
+        .replace(/{{amount}}/g, u.onboarding_fee);
+
+      await axios.post(`${BASE_URL}/notifications/`, {
+        message: personalized,
+        user_ids: [u.user_id],
+      });
     }
 
-    const selectedUsers = users.filter((u) => selectedIds.includes(u.user_id));
-    try {
-      setLoading(true);
-      for (const u of selectedUsers) {
-        const personalized = message
-          .replace(/{{name}}/g, u.employer_name)
-          .replace(/{{amount}}/g, u.onboarding_fee);
+    alert(`✅ Sent personalized notification to ${selectedRecipients.length} user(s).`);
+    setMessage(TEMPLATE);
+    lastValidMessageRef.current = TEMPLATE;
+    renderTemplateIntoEditor(TEMPLATE);
+    setSelectedRecipients([]);
+    setShowConfirm(false);
+    onClose?.();
+  } catch (err) {
+    console.error("❌ Failed to send notification", err);
+    alert("❌ Failed to send notification");
+  } finally {
+    setLoading(false);
+  }
+};
 
-        await axios.post(`${BASE_URL}/notifications/`, {
-          message: personalized,
-          user_ids: [u.user_id],
-        });
-      }
+const handleConfirmNo = () => {
+  setShowConfirm(false);
+};
 
-      alert(`✅ Sent personalized notification to ${selectedUsers.length} user(s).`);
-      setShowConfirm(true);
-      setMessage(TEMPLATE);
-      lastValidMessageRef.current = TEMPLATE;
-      renderTemplateIntoEditor(TEMPLATE);
-    } catch (err) {
-      console.error("❌ Failed to send notification", err);
-      alert("❌ Failed to send notification");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleCloseAll = () => {
     setShowConfirm(false);
@@ -177,7 +193,7 @@ export default function AccountStatementModal({ onClose }) {
 
   return (
     <>
-      <div className="fixed top-0 left-0 w-80 h-full flex items-start z-50">
+      <div className="fixed top-0 left-0 w-full h-full flex items-start bg-black bg-opacity-40 z-50">
         <div
           className="rounded-2xl shadow-2xl flex flex-col p-5 relative animate-[slideInLeft_0.4s_ease-out_forwards] hover:shadow-purple-400 transition-all"
           style={{
@@ -255,8 +271,9 @@ export default function AccountStatementModal({ onClose }) {
       )}
 
       {showConfirm && (
-        <ConfirmModal onYes={handleCloseAll} onNo={() => setShowConfirm(false)} />
+        <ConfirmModal onYes={handleConfirmYes} onNo={handleConfirmNo} />
       )}
+
     </>
   );
 }

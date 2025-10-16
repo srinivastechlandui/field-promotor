@@ -72,7 +72,7 @@ export default function NotificationPopup({ onClose }) {
   return (
     <>
       {showMain && (
-        <div className="fixed top-0 left-0 h-full flex items-start z-50">
+        <div className="fixed top-0 left-0 h-full flex items-start w-full bg-black bg-opacity-40 z-50">
           <div
             className="rounded-lg shadow-lg flex flex-col p-4 relative animate-[slideInLeft_0.4s_ease-out_forwards]"
             style={{

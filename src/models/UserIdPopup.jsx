@@ -25,6 +25,8 @@ const UserIdPopup = ({ onClose, setFilters }) => {
   const [bankedEarningsSort, setBankedEarningsSort] = useState(null);
   const [paidEarningsSort, setPaidEarningsSort] = useState(null);
   const [paymentDueSort, setPaymentDueSort] = useState(null);
+  // New: No Of Account Created sort
+  const [accountsCreatedSort, setAccountsCreatedSort] = useState(null);
 
   const toggleStatus = (status) => {
     setSelectedStatuses((prev) =>
@@ -32,14 +34,33 @@ const UserIdPopup = ({ onClose, setFilters }) => {
     );
   };
 
-  // Generic toggle function for popups
-  const togglePopup = (setState) => {
-    setState(prevState => !prevState);
+  // Only one popup open at a time
+  const closeAllPopups = () => {
+    setUserPopup(false);
+    setBankedPopup(false);
+    setPaidPopup(false);
+    setPaymentDuePopup(false);
+    setJoinedDatePopup(false);
+    setTicketsPopup(false);
+  };
+
+  const togglePopup = (popupSetter) => {
+    closeAllPopups();
+    popupSetter(true);
   };
 
   const handleApply = () => {
+    // Map status filters to status_code values
+    let statusCodes = [];
+    selectedStatuses.forEach((status) => {
+      if (status === 'TRAINING') statusCodes.push(5);
+      else if (status === 'UNVERIFIED') statusCodes.push(1);
+      else if (status === 'UNFILLED') statusCodes.push(0);
+      else statusCodes.push(status); // For other statuses, pass as-is
+    });
+
     setFilters({
-      statuses: selectedStatuses,
+      statuses: statusCodes,
       joinedSort,
       ticketSort,
       bankEarned,
@@ -52,6 +73,7 @@ const UserIdPopup = ({ onClose, setFilters }) => {
       bankedEarningsSort,
       paidEarningsSort,
       paymentDueSort,
+      accountsCreatedSort,
     });
     onClose && onClose();
   };
@@ -82,10 +104,11 @@ const UserIdPopup = ({ onClose, setFilters }) => {
             userPopup ? 'bg-[#9A8888]' : 'bg-[#AE9F9F]'
           }`}
         >
-          <div className="text-xl font-bold text-black flex items-center gap-2">
+          <div className="text-xl font-bold text-black flex items-center gap-2"
+          onClick={() => togglePopup(setUserPopup)}>
             User
             <span
-              onClick={() => togglePopup(setUserPopup)}
+              
               className={`text-white px-2 py-1 rounded-md text-sm cursor-pointer transition-all duration-300 ease-in-out ${
                 userPopup ? 'bg-blue-500 scale-110' : 'bg-gray-500'
               }`}
@@ -319,19 +342,68 @@ const UserIdPopup = ({ onClose, setFilters }) => {
                   onClick={() => {
                     setPaidEarningsSort('low');
                     setPaidPopup(false); // Close popup on selection
-                  }}
-                  className={`px-2 py-1 text-left bg-white text-black rounded border-2 border-transparent transition-all duration-150 ease-in-out ${
+                    }}
+                    className={`px-2 py-1 text-left bg-white text-black rounded border-2 border-transparent transition-all duration-150 ease-in-out ${
                     paidEarningsSort === 'low' ? 'ring-2 ring-blue-500' : ''
+                    }`}
+                  >
+                    Low → High
+                  </button>
+                  </div>
+                </div>
+                )}
+              </div>
+
+              {/* No Of Account Created */}
+              <div
+                className={`p-3 border-b border-white flex justify-between items-center relative transition-all duration-300 ease-in-out ${
+                accountsCreatedSort ? 'bg-[#9A8888]' : 'bg-[#AE9F9F]'
+                }`}
+              >
+                <p className="font-semibold text-black flex items-center gap-2">
+                No Of Account Created
+                <span
+                  onClick={() => setAccountsCreatedSort(accountsCreatedSort ? null : 'open')}
+                  className={`text-white border-b border-black px-2 py-1 rounded-md text-sm cursor-pointer transition-all duration-300 ease-in-out ${
+                  accountsCreatedSort ? 'bg-blue-500 scale-110' : 'bg-gray-500'
                   }`}
                 >
-                  Low → High
-                </button>
+                  🗂️
+                </span>
+                </p>
+                {accountsCreatedSort === 'open' && (
+                  <div
+                    className="absolute top-full left-0 w-[212px] bg-white shadow-lg rounded border border-gray-300 z-50 ml-2 animate-fade-in"
+                    style={{ transform: 'translateX(calc(-100% - 20px))' }}
+                  >
+                    <div className="p-2 space-y-1 flex flex-col">
+                      <button
+                        onClick={() => {
+                          setAccountsCreatedSort('new');
+                        }}
+                        className={`px-2 py-1 text-left bg-white text-black rounded border-2 border-transparent transition-all duration-150 ease-in-out ${
+                          accountsCreatedSort === 'new' ? 'ring-2 ring-blue-500' : ''
+                        }`}
+                        style={accountsCreatedSort === 'new' ? { boxShadow: '0 0 0 2px #3B82F6' } : {}}
+                      >
+                        New → Old
+                      </button>
+                      <button
+                        onClick={() => {
+                          setAccountsCreatedSort('old');
+                        }}
+                        className={`px-2 py-1 text-left bg-white border-black text-black rounded border-2 border-transparent transition-all duration-150 ease-in-out ${
+                          accountsCreatedSort === 'old' ? 'ring-2 ring-blue-500' : ''
+                        }`}
+                        style={accountsCreatedSort === 'old' ? { boxShadow: '0 0 0 2px #3B82F6' } : {}}
+                      >
+                        Old → New
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* Payment Due */}
+              {/* Payment Due */}
         <div
           className={`p-3 border-b border-white flex justify-between items-center relative transition-all duration-300 ease-in-out ${
             paymentDuePopup ? 'bg-[#9A8888]' : 'bg-[#AE9F9F]'
