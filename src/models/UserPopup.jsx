@@ -6,7 +6,7 @@ import axios from "axios";
 import BASE_URL from "../utils/Urls";
 
 const UserPopup = ({ onClose }) => {
-
+  // const BASE_URL = "http://localhost:8080/api/v1"
   const [showMain, setShowMain] = useState(true);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -182,7 +182,7 @@ const UserPopup = ({ onClose }) => {
               {/* FEE */}
               <div className="flex items-center justify-center mb-6">
                 <p className="text-white text-lg font-bold text-center">
-                  Onboarding/Diagrama verification fee
+                  Onboarding/background verification fee
                 </p>
               </div>
               <div className="flex items-center justify-center mb-4">

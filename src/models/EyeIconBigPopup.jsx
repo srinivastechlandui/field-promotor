@@ -235,10 +235,12 @@ export default function EyeIconBigPopup({user, onClose }) {
 
                 <div className="flex flex-col z-10 min-w-[100px]">
                   <div className="mb-1">
-                    <span className="text-lg font-bold text-purple-700">${stats.bankedTotal}</span>
+
+                    <p className="text-xs  text-[#B100AE]">Bank Earnings</p>
+                    <span className="text-lg font-bold text-[#B100AE]">${stats.bankedTotal}</span>
                   </div>
                   <div>
-                    <span className="text-xs font-bold text-purple-700">
+                    <span className="text-xs font-bold text-[#B100AE]">
                       NO.OF Edited Accounts [{editedBankedEarningsCount}]
                     </span>
                   </div>
@@ -251,7 +253,7 @@ export default function EyeIconBigPopup({user, onClose }) {
                   </div>
                 </div>
                 <div className="px-3 py-1 border-2 border-brown-700 text-brown-700 rounded-md text-center mx-1 z-10">
-                  <span className="text-xs block">...</span>
+                  <span className="text-xs block">Live Payout Bills</span>
                   <span className="font-bold text-sm block text-[#A80C0F]">${stats.totalLivePayoutBill}</span>
                   <span className="text-xs block text-[#A80C0F]">NO.OF Edited Accounts [{editedPaidEarningsCount}]</span>
                   {/* <span className="text-xs block">NO.OF Edited payment due Accounts [{editedPaymentDueCount}]</span> */}
@@ -267,11 +269,11 @@ export default function EyeIconBigPopup({user, onClose }) {
                     <div className="flex w-full justify-between z-10 mx-5">
                       <div className="flex flex-col items-start">
                         <span className="text-xs text-white font-medium">Accounts</span>
-                        {/* <span className="text-lg text-white font-bold">50K</span> */}
-                        {/* <span className="text-lg text-[#B100AE] font-bold">000</span> */}
+                        <span className="text-lg text-white font-bold">50K</span>
+                        <span className="text-lg text-[#B100AE] font-bold">000</span>
                       </div>
-                      {/* <div className="text-lg font-bold text-orange-500">[#]</div> */}
-                      {/* <div className="text-lg font-bold text-[#A80C0F]">[#]</div> */}
+                      <div className="text-lg font-bold text-orange-500">[#]</div>
+                      <div className="text-lg font-bold text-[#A80C0F]">[#]</div>
                       <div className="border-2 border-red-500 bg-white bg-opacity-90 p-2 rounded text-black text-center font-bold">
                         <span className="block">#</span>
                         <span className="text-red-500 block">$${stats.totalPaymentDue}</span>
@@ -308,13 +310,13 @@ export default function EyeIconBigPopup({user, onClose }) {
                 className="cursor-pointer border-4 border-red-500 rounded-2xl bg-white ml-3 px-5 h-[40px] flex items-center justify-center -translate-x-[20px] translate-y-3"
               >
                 <span className="font-bold text-red-500 mr-2">
-                  Company Account Number -
+                  Company Account-
                 </span>
                 {bankDetails.length > 0 ? (
                   <span className="font-bold whitespace-nowrap">
                     <span className="text-[#A80C0F]">
                       {bankDetails[0].company_account_no},
-                    </span>{" "}
+                    </span>
                     {" "}
                     <span className="text-[#FF0505]">
                       {bankDetails[0].company_bank_name}

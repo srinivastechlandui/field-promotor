@@ -12,29 +12,32 @@ export default function PaidEarnings({ onClose, selectedUser }) {
   const [showUserSelect, setShowUserSelect] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState([]);
   // const [message, setMessage] = useState("");
-  const TEMPLATE = "Hello, your paid earnings of ₹{{amount}} have been successfully processed. Thank you!";
+  const TEMPLATE = "Hello {{name}}, your paid earnings of ₹{{amount}} have been successfully processed. Thank you!";
   const [message, setMessage] = useState(TEMPLATE);
   const editorRef = useRef(null);
   const lastValidMessageRef = useRef(TEMPLATE);
   // Helper to create protected amount span
-  const makeAmountSpan = (amountText = "{{amount}}") => {
+  // Helper to create protected placeholder span (name or amount)
+  const makePlaceholderSpan = (name, displayText) => {
     const span = document.createElement("span");
-    span.textContent = amountText;
+    span.textContent = displayText || `{{${name}}}`;
     span.setAttribute("contenteditable", "false");
-    span.dataset.placeholder = "amount";
-    span.className = "text-blue-600 font-semibold px-1 rounded bg-blue-50";
+    span.dataset.placeholder = name;
+    span.className = "text-blue-600 font-semibold px-1 rounded bg-blue-50 cursor-default";
     return span;
   };
 
-  // Render template string into editor as text nodes + amount span
+  // Render template string into editor as text nodes + placeholder spans
   const renderTemplateIntoEditor = (tpl) => {
     if (!editorRef.current) return;
     const editor = editorRef.current;
     while (editor.firstChild) editor.removeChild(editor.firstChild);
-    const parts = tpl.split(/(\{\{amount\}\})/g);
+    const parts = tpl.split(/(\{\{name\}\}|\{\{amount\}\})/g);
     parts.forEach((part) => {
-      if (part === "{{amount}}") {
-        editor.appendChild(makeAmountSpan("{{amount}}"));
+      if (part === "{{name}}") {
+        editor.appendChild(makePlaceholderSpan("name", "{{name}}"));
+      } else if (part === "{{amount}}") {
+        editor.appendChild(makePlaceholderSpan("amount", "{{amount}}"));
       } else {
         editor.appendChild(document.createTextNode(part));
       }
@@ -51,8 +54,8 @@ export default function PaidEarnings({ onClose, selectedUser }) {
         result += node.textContent;
       } else if (node.nodeType === Node.ELEMENT_NODE) {
         const el = node;
-        if (el.dataset && el.dataset.placeholder === "amount") {
-          result += "{{amount}}";
+        if (el.dataset && el.dataset.placeholder) {
+          result += `{{${el.dataset.placeholder}}}`;
         } else {
           result += el.textContent || "";
         }
@@ -64,7 +67,8 @@ export default function PaidEarnings({ onClose, selectedUser }) {
   // onInput handler - update message, but protect amount
   const handleInput = (e) => {
     const newTpl = parseEditorToTemplate();
-    if (!newTpl.includes("{{amount}}")) {
+    // ensure both placeholders remain present
+    if (!newTpl.includes("{{amount}}") || !newTpl.includes("{{name}}")) {
       renderTemplateIntoEditor(lastValidMessageRef.current);
       placeCaretAtEnd(editorRef.current);
       return;
@@ -87,6 +91,7 @@ export default function PaidEarnings({ onClose, selectedUser }) {
     }
   };
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState([]);
 
   const AMOUNT = 500; // const value
 
@@ -106,25 +111,28 @@ export default function PaidEarnings({ onClose, selectedUser }) {
     setShowUserSelect(true);
   };
 
- // Step 2: after selecting recipients, send notification
-const handleUserSelectSubmit = (recipients) => {
-  if (!recipients || recipients.length === 0) {
-    alert("⚠️ No users selected.");
-    return;
-  }
-  setSelectedRecipients(recipients);
-  setShowUserSelect(false);
-  setShowConfirm(true); // ask before sending
-};
+   // Step 2: after selecting recipients (ids), map them to user objects and open confirm
+  const handleUserSelectSubmit = (selectedIds) => {
+    setShowUserSelect(false);
+    if (!selectedIds || selectedIds.length === 0) {
+      alert("⚠️ No users selected.");
+      return;
+    }
+    const selectedUsers = users.filter((u) => selectedIds.includes(u.user_id));
+    setSelectedRecipients(selectedUsers);
+    setShowConfirm(true); // ask before sending
+  };
 
 // when user clicks "Yes" in ConfirmModal
 const handleConfirmYes = async () => {
   if (!selectedRecipients.length) return;
 
-  try {
+    try {
     setLoading(true);
     for (const u of selectedRecipients) {
-      const personalized = message.replace(/\{\{amount\}\}/g, u.paidEarnings || AMOUNT);
+      const personalized = message
+        .replace(/\{\{amount\}\}/g, u.paidEarnings || AMOUNT)
+        .replace(/\{\{name\}\}/g, u.employer_name || "");
       await axios.post(`${BASE_URL}/notifications/`, {
         message: personalized,
         user_ids: [u.user_id],
@@ -155,6 +163,25 @@ const handleConfirmNo = () => {
     const currentTpl = parseEditorToTemplate();
     if (currentTpl !== message) renderTemplateIntoEditor(message);
   }, [message]);
+
+  // initial render of editor content
+  useEffect(() => {
+    renderTemplateIntoEditor(TEMPLATE);
+    lastValidMessageRef.current = TEMPLATE;
+  }, []);
+
+  // fetch users for personalization
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const { data } = await axios.get(`${BASE_URL}/users/`);
+        setUsers(data?.users || []);
+      } catch (err) {
+        console.error("❌ Failed to fetch users", err);
+      }
+    };
+    fetchUsers();
+  }, []);
   return (
     <>
       {showMain && (
@@ -205,7 +232,7 @@ const handleConfirmNo = () => {
                 spellCheck={false}
               ></div>
               <div className="text-xs text-gray-500 mt-2">
-                <span className="font-semibold text-purple-700">Ex:</span> Hello, your paid earnings of ₹<span className="text-blue-600 font-semibold px-1 rounded bg-blue-50">500</span> have been successfully processed. Thank you!
+                <span className="font-semibold text-purple-700">Ex:</span> Hello <code className="bg-gray-100 px-1 rounded text-blue-600">Raju</code>, your paid earnings of ₹<code className="bg-gray-100 px-1 rounded text-blue-600">500</code> have been successfully processed. Thank you!
               </div>
             </div>
   

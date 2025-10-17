@@ -45,6 +45,7 @@ const ActivatePopup = ({ user, onClose, image }) => {
     const [rejectedCodes, setRejectedCodes] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [notifications, setNotifications] = useState([]);
+    const [accountFilter, setAccountFilter] = useState("all");
     const [filter, setFilter] = useState("all");
     const [deactivated, setDeactivated] = useState(false);
     const [steps, setSteps] = useState([]);
@@ -588,8 +589,43 @@ const ActivatePopup = ({ user, onClose, image }) => {
 
                         {/* Toggle switch */}
                         <button
-                            onClick={() => setIsToggled(!isToggled)}
+                            onClick={async (e) => {
+                                e.stopPropagation();
+                                if (!localUser?.user_id) {
+                                    alert("No user selected");
+                                    return;
+                                }
+
+                                const newValue = !isToggled;
+                                // optimistic UI update
+                                setIsToggled(newValue);
+                                setLoading(true);
+                                try {
+                                    const res = await axios.put(
+                                        `${BASE_URL}/users/admin/revoke_image_login/${localUser.user_id}`,
+                                        { allow_image_login: newValue }
+                                    );
+
+                                    // Sync local user to backend state. When disabling, backend may clear login_image
+                                    setLocalUser((prev) => ({
+                                        ...prev,
+                                        allow_image_login: newValue,
+                                        login_image: newValue ? prev.login_image : null,
+                                    }));
+
+                                    // show backend message if present
+                                    if (res.data?.message) alert(res.data.message);
+                                } catch (err) {
+                                    // rollback optimistic update
+                                    setIsToggled((prev) => !prev);
+                                    alert(err.response?.data?.message || "Failed to update image-login setting");
+                                } finally {
+                                    setLoading(false);
+                                }
+                            }}
                             className="text-white"
+                            disabled={loading || !localUser?.user_id}
+                            title={isToggled ? "Disable image login" : "Enable image login"}
                         >
                             {isToggled ? (
                                 <FaToggleOn size={36} className="text-blue-400" />
@@ -903,25 +939,63 @@ const ActivatePopup = ({ user, onClose, image }) => {
                         <FaBars className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-[#3a1e0b] font-bold" />
                         <h2 className="text-xs font-bold text-black">Account Statement</h2>
                     </div>
-                    <div className="flex items-center justify-center gap-2 border-b-2 border-gray-600 w-[112px] mb-3">
-                        <span className="text-semibold text-[8px]">All</span>
-                        <span className="text-semibold text-[8px]">Paid</span>
-                        <span className="text-semibold text-[8px]">Pending</span>
-                        <span className="text-semibold text-[8px]">Live Run</span>
+                    <div className="flex items-center justify-center gap-2 border-b-2 border-gray-600 w-[112px] mb-3 text-[8px]">
+                        <span
+                            onClick={() => setAccountFilter("all")}
+                            className={`cursor-pointer ${accountFilter === "all" ? "text-[#4D4D4D] font-bold" : "text-[#988686]"}`}
+                        >
+                            All
+                        </span>
+                        <span
+                            onClick={() => setAccountFilter("paid")}
+                            className={`cursor-pointer ${accountFilter === "paid" ? "text-[#4D4D4D] font-bold" : "text-[#988686]"}`}
+                        >
+                            Paid
+                        </span>
+                        <span
+                            onClick={() => setAccountFilter("pending")}
+                            className={`cursor-pointer ${accountFilter === "pending" ? "text-[#4D4D4D] font-bold" : "text-[#988686]"}`}
+                        >
+                            Pending
+                        </span>
+                        <span
+                            onClick={() => setAccountFilter("live")}
+                            className={`cursor-pointer ${accountFilter === "live" ? "text-[#4D4D4D] font-bold" : "text-[#988686]"}`}
+                        >
+                            Live Run
+                        </span>
                     </div>
                     {/* Transaction Payment Row */}
                     <div className="flex flex-col w-[141px] space-y-2 mb-2">
-                        <div className="flex flex-col bg-red-50 border border-red-300 rounded px-2 py-1 text-[10px] font-semibold">
-                            <div className="flex items-center justify-between">
-                                <span className="text-red-700">Transaction Payment</span>
-                                <span className="text-red-900">₹-{user.onboarding_fee || 0}</span>
-                            </div>
-                            {user.transaction_id && (
-                                <div className="flex items-center justify-end mt-1">
-                                    <span className="text-[9px] text-gray-700 font-normal">Txn ID: {user.transaction_id}</span>
+                        {/* Show different content based on accountFilter; keep default Transaction Payment visible for most tabs */}
+                        {(accountFilter === "all") && (
+                            <div className="flex flex-col bg-red-50 border border-red-300 rounded px-2 py-1 text-[10px] font-semibold">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-red-700">Transaction Payment</span>
+                                    <span className="text-red-900">₹-{user.onboarding_fee || 0}</span>
                                 </div>
-                            )}
-                        </div>
+                                {user.transaction_id && (
+                                    <div className="flex items-center justify-end mt-1">
+                                        <span className="text-[9px] text-gray-700 font-normal">Txn ID: {user.transaction_id}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Live Run tab: show livePayoutBills amount */}
+                        {accountFilter === "live" && (
+                            <div className="flex flex-col bg-yellow-50 border border-yellow-300 rounded px-2 py-1 text-[10px] font-semibold hover:bg-green-400 hover:border-yellow-400">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-yellow-700">Live Run Amount</span>
+                                    <span className="text-yellow-900">₹{(user.livePayoutBills !== undefined && user.livePayoutBills !== null) ? user.livePayoutBills : 0}</span>
+                                </div>
+                                {user.livePayoutBillsNote && (
+                                    <div className="flex items-center justify-end mt-1">
+                                        <span className="text-[9px] text-gray-700 font-normal">{user.livePayoutBillsNote}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                     <div className="flex flex-col w-[139px] h-[1.5px] space-y-6">
                         {[...Array(7)].map((_, i) => (
