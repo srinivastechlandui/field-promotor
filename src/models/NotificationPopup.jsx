@@ -1,41 +1,46 @@
 import React, { useState, useEffect } from "react";
 import { IoClose } from "react-icons/io5";
-import { FaPaperPlane, FaUserPlus } from "react-icons/fa"; // Added FaUserPlus icon
+import { FaPaperPlane, FaUserPlus } from "react-icons/fa";
 import axios from "axios";
 import ConfirmModal from "./ConfirmModal";
-import UserSelectModal from "./UserSelectModal"; // Import the UserSelectModal
+import UserSelectModal from "./UserSelectModal";
 import BASE_URL from "../utils/Urls";
 
 export default function NotificationPopup({ onClose }) {
   const [showMain, setShowMain] = useState(true);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [showUserSelectModal, setShowUserSelectModal] = useState(false); // New state to control modal visibility
+  const [showUserSelectModal, setShowUserSelectModal] = useState(false);
   const [message, setMessage] = useState("");
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const emptyLines = 4;
 
-  // Function to handle opening the user selection modal
+  // 📦 Open user select modal
   const handleOpenUserSelect = () => {
     setShowUserSelectModal(true);
   };
 
-  // Function to handle the users submitted from the modal
+  // ✅ Receive selected users
   const handleUserSelection = (users) => {
-    setSelectedUsers(users); // Set the selected users from the modal
-    setShowUserSelectModal(false); // Close the modal
+    setSelectedUsers(users);
+    setShowUserSelectModal(false);
   };
 
-  // Send notification API
-  const handleSendNotification = async () => {
+  // ⚠️ Step 1: open confirm modal first, don't call API yet
+  const handleSendNotification = () => {
     if (!message.trim()) {
       alert("⚠️ Please enter a notification message");
       return;
     }
     if (selectedUsers.length === 0) {
-    alert("⚠️ Please select at least one user to send the notification messages.");
-    return;
-  }
+      alert("⚠️ Please select at least one user to send the notification messages.");
+      return;
+    }
+    setShowConfirm(true); // open confirm modal only
+  };
+
+  // 🚀 Step 2: this runs only if user clicks “YES”
+  const handleConfirmYes = async () => {
     setLoading(true);
     const payload = {
       message,
@@ -59,7 +64,7 @@ export default function NotificationPopup({ onClose }) {
       alert("❌ Failed to send notification");
     } finally {
       setLoading(false);
-      setShowConfirm(true); // Always show confirmation after an attempt
+      handleCloseAll();
     }
   };
 
@@ -87,10 +92,7 @@ export default function NotificationPopup({ onClose }) {
               <h2 className="text-lg font-bold text-white drop-shadow">
                 Notification
               </h2>
-              <button
-                onClick={handleCloseAll}
-                className="p-1 rounded bg-red-600"
-              >
+              <button onClick={handleCloseAll} className="p-1 rounded bg-red-600">
                 <IoClose className="text-white text-2xl" />
               </button>
             </div>
@@ -103,15 +105,13 @@ export default function NotificationPopup({ onClose }) {
               placeholder="Type your notification message here..."
             />
 
-           
             {/* Empty lines (for visual spacing) */}
             {Array.from({ length: emptyLines }).map((_, idx) => (
               <div key={idx} className="absolute border-b-4 border-white my-2"></div>
             ))}
 
-          
-              <div className="flex justify-between items-center mb-4">
-              {/* Select Users Button (on the left) */}
+            <div className="flex justify-between items-center mb-4">
+              {/* Select Users Button */}
               <button
                 onClick={handleOpenUserSelect}
                 className="flex items-center gap-2 text-white font-bold py-2 px-4 rounded-full"
@@ -124,7 +124,7 @@ export default function NotificationPopup({ onClose }) {
                 <FaUserPlus /> Select Users ({selectedUsers.length})
               </button>
 
-              {/* Send Button (on the right) */}
+              {/* Send Button */}
               <button
                 onClick={handleSendNotification}
                 disabled={loading}
@@ -139,7 +139,6 @@ export default function NotificationPopup({ onClose }) {
                 {!loading && <FaPaperPlane className="w-5 h-5" />}
               </button>
             </div>
-
           </div>
         </div>
       )}
@@ -151,8 +150,12 @@ export default function NotificationPopup({ onClose }) {
         />
       )}
 
+      {/* ✅ Only sends when YES is clicked */}
       {showConfirm && (
-        <ConfirmModal onYes={handleCloseAll} onNo={() => setShowConfirm(false)} />
+        <ConfirmModal
+          onYes={handleConfirmYes}
+          onNo={() => setShowConfirm(false)}
+        />
       )}
     </>
   );

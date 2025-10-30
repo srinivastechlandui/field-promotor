@@ -6,7 +6,6 @@ import axios from "axios";
 import BASE_URL from "../utils/Urls";
 
 const UserPopup = ({ onClose }) => {
-  // const BASE_URL = "http://localhost:8080/api/v1"
   const [showMain, setShowMain] = useState(true);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -14,8 +13,8 @@ const UserPopup = ({ onClose }) => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
   const [onboardingFee, setOnboardingFee] = useState("");
-  const [group, setGroup] = useState(""); 
-  const [groups, setGroups] = useState([]); 
+  const [group, setGroup] = useState("");
+  const [groups, setGroups] = useState([]);
   const [purpose, setPurpose] = useState("");
 
   useEffect(() => {
@@ -32,14 +31,15 @@ const UserPopup = ({ onClose }) => {
     fetchGroups();
   }, []);
 
-  const handleCreateAccount = async () => {
-    if (!group) {
-      return alert("⚠️ Please select a group before creating an account");
-    }
-    if (!purpose) {
-      return alert("⚠️ Please select a purpose before creating an account");
-    }
+  // STEP 1️⃣ - show confirmation modal first
+  const handleCreateAccount = () => {
+    if (!group) return alert("⚠️ Please select a group before creating an account");
+    if (!purpose) return alert("⚠️ Please select a purpose before creating an account");
+    setShowConfirm(true);
+  };
 
+  // STEP 2️⃣ - perform API call only if user confirms
+  const handleConfirmYes = async () => {
     try {
       const response = await axios.post(`${BASE_URL}/users/admin`, {
         user_id: userId,
@@ -51,8 +51,8 @@ const UserPopup = ({ onClose }) => {
       });
 
       console.log("✅ User created:", response.data);
-      alert("User Created Successfully, thank you");
-      setShowConfirm(true);
+      alert("✅ User Created Successfully, thank you Admin");
+      handleCloseAll();
     } catch (err) {
       if (err.response) {
         alert(err.response.data.message || "❌ Failed to create user");
@@ -70,7 +70,6 @@ const UserPopup = ({ onClose }) => {
 
   return (
     <>
-     
       {showMain && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div
@@ -132,7 +131,7 @@ const UserPopup = ({ onClose }) => {
                   </div>
                 </div>
 
-                {/* GROUP (Dropdown) */}
+                {/* GROUP */}
                 <div>
                   <label className="block text-white text-sm font-semibold mb-1">GROUP</label>
                   <div className="border border-white rounded-xl px-4 py-3 bg-white/10 backdrop-blur-md">
@@ -152,8 +151,8 @@ const UserPopup = ({ onClose }) => {
                     </select>
                   </div>
                 </div>
-              </div>
-                 {/* PURPOSE (Dropdown) */}
+
+                {/* PURPOSE */}
                 <div>
                   <label className="block text-white text-sm font-semibold mb-1">PURPOSE</label>
                   <div className="border border-white rounded-xl px-4 py-3 bg-white/10 backdrop-blur-md">
@@ -165,26 +164,21 @@ const UserPopup = ({ onClose }) => {
                       <option value="" disabled className="text-black">
                         Select purpose
                       </option>
-                      <option value="part-time" className="text-black">
-                        Part-time
-                      </option>
-                      <option value="full-time" className="text-black">
-                        Full-time
-                      </option>
-                      <option value="influencer" className="text-black">
-                        Influencer
-                      </option>
+                      <option value="part-time" className="text-black">Part-time</option>
+                      <option value="full-time" className="text-black">Full-time</option>
+                      <option value="influencer" className="text-black">Influencer</option>
                     </select>
                   </div>
-                {/* </div> */}
+                </div>
               </div>
 
-              {/* FEE */}
+              {/* ONBOARDING FEE */}
               <div className="flex items-center justify-center mb-6">
                 <p className="text-white text-lg font-bold text-center">
                   Onboarding/background verification fee
                 </p>
               </div>
+
               <div className="flex items-center justify-center mb-4">
                 <div className="w-44 h-20">
                   <input
@@ -214,7 +208,7 @@ const UserPopup = ({ onClose }) => {
       )}
 
       {showConfirm && (
-        <ConfirmModal onYes={handleCloseAll} onNo={() => setShowConfirm(false)} />
+        <ConfirmModal onYes={handleConfirmYes} onNo={() => setShowConfirm(false)} />
       )}
     </>
   );

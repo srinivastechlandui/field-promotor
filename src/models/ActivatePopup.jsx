@@ -644,7 +644,7 @@ const ActivatePopup = ({ user, onClose, image }) => {
                                 background: "linear-gradient(to bottom, #464399, #E52CB6)",
                             }}
                         >
-                            {localUser.coupon_code || "N/A"}
+                            {localUser.coupon_code || "*"}
                             <FaEdit className="ml-2 text-yellow-300" />
                         </button>
 

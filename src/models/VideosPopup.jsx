@@ -244,17 +244,21 @@ export default function VideosPopup({ onClose, user }) {
               <h2 className="text-white font-extrabold text-2xl drop-shadow-lg flex items-center gap-2">
                 📺 Videos for you
               </h2>
-              <button
-                onClick={handleAddLinkClick}
-                className="flex items-center gap-2 text-white font-bold py-2 px-4 rounded-full mr-9"
-                style={{
-                  background: "linear-gradient(to right, #5b0e2d, #a83279)",
-                  border: "2px solid gold",
-                  boxShadow: "0px 2px 5px rgba(0,0,0,0.3)",
-                }}
-              >
-                ADD LINK <FaPlus className="w-3 h-3" />
-              </button>
+             <button
+                  onClick={handleAddLinkClick}
+                  disabled={showAddForm} // ✅ Disable when form is open
+                  className={`flex items-center gap-2 text-white font-bold py-2 px-4 rounded-full mr-9 ${
+                    showAddForm ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                  style={{
+                    background: "linear-gradient(to right, #5b0e2d, #a83279)",
+                    border: "2px solid gold",
+                    boxShadow: "0px 2px 5px rgba(0,0,0,0.3)",
+                  }}
+                >
+                  ADD LINK <FaPlus className="w-3 h-3" />
+                </button>
+
             </div>
 
             {/* Filter and Search */}
@@ -281,7 +285,7 @@ export default function VideosPopup({ onClose, user }) {
 
             {/* Add/Edit Form (visible only when needed) */}
             {showAddForm && (
-              <div className="mt-6 mb-4">
+              <div className="mt-6 mb-4 border border-gray rounded p-3">
                 <input
                   type="text"
                   value={newVideoLink}
