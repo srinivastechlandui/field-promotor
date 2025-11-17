@@ -75,7 +75,7 @@ export default function BottomEyeIcon({
         {/* === KeypadModal === */}
         {showKeyPad && (
           <KeypadModal
-            type="primary" // ✅ this makes it call /locks/verify-primary
+            type="primary" 
             onGoClick={() => {
               console.log("✅ primary lock verified — showing confirm modal");
               setShowConfirm(true);

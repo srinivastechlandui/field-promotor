@@ -3,6 +3,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import TermsAndConditions from "./page/TermsAndConditions";
+import ContactUs from "./page/ContactUs";
 import MobileTerms from "./page/MobileTerms";
 import LoginPage from './page/Login';
 // import JobOpportunity from './page/JobOpportunity';
@@ -24,6 +25,7 @@ function App() {
         <Route path="/" element={<LoginPage />} />
         <Route path="/dashboard" element={<Header />} /> {/* Header page */}
 
+          <Route path="/contactus" element={<ContactUs />} />
           <Route path="/privacy" element={<TermsAndConditions />} />
           <Route path="/terms" element={<MobileTerms />} />
           {/* Add other routes as needed */}
